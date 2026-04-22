@@ -1,0 +1,116 @@
+// 영문 컬럼명 → 한국어 라벨 매핑 (수정이력 표시용).
+// 트리거(public.log_change_history)는 컬럼명을 field_name_ko 컬럼에 그대로 저장하고,
+// UI 단에서 이 매핑으로 한국어로 변환한다.
+
+const FIELD_LABEL: Record<string, string> = {
+  // 공통
+  phase: '차수',
+  room_no: '호수',
+  type: '타입',
+  view_type: '조망',
+  status: '상태',
+  note: '비고',
+  content: '내용',
+  title: '제목',
+  cost: '비용',
+  // rooms
+  land_area: '대지면적',
+  exclusive_area: '전유면적',
+  partial_common_area: '일부공용',
+  other_common_area: '기타공용',
+  parking_common_area: '주차공용',
+  sale_area: '분양면적',
+  exclusive_ratio: '전유율',
+  has_terrace: '테라스',
+  has_attic: '다락',
+  sale_price_excl_vat: '분양가(VAT 제외)',
+  sale_price_incl_vat: '분양가(VAT 포함)',
+  // buyers
+  buyer_no: '계약자번호',
+  buyer_type: '개인/법인',
+  name1: '계약자명1',
+  name2: '계약자명2',
+  phone1: '휴대폰1',
+  phone2: '휴대폰2',
+  tel1: '일반전화1',
+  tel2: '일반전화2',
+  email1: '이메일1',
+  email2: '이메일2',
+  address1: '주소1',
+  address2: '주소2',
+  memo1: '비고1',
+  memo2: '비고2',
+  agree_sms: '문자수신동의',
+  agree_email: '이메일수신동의',
+  agree_post: '우편수신동의',
+  ssn1: '주민번호1',
+  ssn2: '주민번호2',
+  // contracts
+  contract_no: '계약번호',
+  buyer_id: '계약자',
+  contract_form: '계약형태',
+  contract_date: '계약일',
+  operation_type: '운영방식',
+  operation_start: '운영시작',
+  operation_end: '운영종료',
+  accommodation_type: '숙박형태',
+  reverse_issuance: '역발행',
+  initial_cost: '초기비용',
+  move_in_date: '입주일',
+  account_bank: '입금은행',
+  account_no: '계좌번호',
+  business_no: '사업자번호',
+  tenant_name: '임차인',
+  tenant_phone: '임차인 연락처',
+  lease_start: '임대시작',
+  lease_end: '임대종료',
+  // maintenance / common
+  requester: '요청자',
+  request_date: '요청일',
+  urgency: '긴급도',
+  assigned_to: '담당자',
+  action_content: '처리내용',
+  source: '출처',
+  source_id: '출처ID',
+  completed_at: '완료시각',
+  completed_by: '완료자',
+  // room_transfers
+  from_phase: '이동전 차수',
+  from_room_no: '이동전 호수',
+  to_phase: '이동후 차수',
+  to_room_no: '이동후 호수',
+  transfer_date: '이동일',
+  reason: '사유',
+  // room_checks
+  check_date: '점검일',
+  checker: '점검자',
+  checklist: '체크리스트',
+  overall_status: '전체상태',
+  special_notes: '특이사항',
+  photos: '사진',
+  next_check_date: '다음점검예정일',
+  // room_maintenance_tasks
+  maintenance_type: '정비유형',
+  // consultations
+  consult_date: '상담일',
+  channel: '채널',
+  result: '결과',
+  consultant: '상담자',
+}
+
+const TABLE_LABEL: Record<string, string> = {
+  rooms: '객실마스터',
+  buyers: '수분양자',
+  contracts: '계약',
+  consultations: '상담',
+  maintenance_requests: '영선요청',
+  room_transfers: '객실이동',
+  room_checks: '객실체크',
+  room_maintenance_tasks: '객실정비',
+}
+
+export const labelFor = (column: string | null | undefined): string =>
+  column ? FIELD_LABEL[column] ?? column : '-'
+
+export const tableLabelFor = (table: string | null | undefined): string =>
+  table ? TABLE_LABEL[table] ?? table : '-'

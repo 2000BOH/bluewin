@@ -1,8 +1,46 @@
-export default function RoomTransferPage() {
+// 객실이동 (/room-transfer) - Phase 5
+// "영선반" 상태 선택 시 자동으로 영선 페이지에 등록 + 이동 안내.
+
+import { createServerSupabase } from '@/lib/supabase/server'
+import { listTransfers, type TransferFilter } from '@/lib/queries/room-transfer'
+import PageHeader from '@/components/common/PageHeader'
+import TransferTable from './TransferTable'
+import type { CommonStatus } from '@/types/supabase'
+
+export const dynamic = 'force-dynamic'
+
+type SearchParams = Record<string, string | string[] | undefined>
+
+const pickStr = (v: string | string[] | undefined): string | null => {
+  if (Array.isArray(v)) return v[0] ?? null
+  return v ?? null
+}
+
+const buildFilter = (params: SearchParams): TransferFilter => ({
+  fromPhase: pickStr(params.from_phase) ? Number(pickStr(params.from_phase)) : null,
+  toPhase: pickStr(params.to_phase) ? Number(pickStr(params.to_phase)) : null,
+  roomNo: pickStr(params.room_no),
+  status: (pickStr(params.status) as CommonStatus) || null,
+  tenantName: pickStr(params.tenant_name),
+  from: pickStr(params.from),
+  to: pickStr(params.to),
+})
+
+export default async function RoomTransferPage({
+  searchParams,
+}: {
+  searchParams: SearchParams
+}) {
+  const supabase = createServerSupabase()
+  const rows = await listTransfers(supabase, buildFilter(searchParams))
+
   return (
-    <main className="p-8">
-      <h1 className="text-2xl font-bold">객실이동 (준비 중)</h1>
-      <p className="mt-2 text-sm text-muted-foreground">Phase 5 에서 구현 예정</p>
-    </main>
+    <div className="space-y-6 p-6 lg:p-8">
+      <PageHeader
+        title="객실이동 관리"
+        description="객실 이동 이력을 관리합니다. 상태를 '영선반'으로 변경하면 영선 페이지에 자동 등록됩니다."
+      />
+      <TransferTable rows={rows} />
+    </div>
   )
 }

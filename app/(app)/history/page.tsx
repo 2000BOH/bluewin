@@ -51,6 +51,13 @@ export default async function HistoryPage({
   const supabase = createServerSupabase()
   const rows = await listHistory(supabase, buildFilter(searchParams))
 
+  // 에러 핸들링 예시
+  // try {
+  //   const rows = await listHistory(supabase, buildFilter(searchParams))
+  // } catch (error) {
+  //   console.error("Failed to fetch history:", error)
+  //   // 사용자에게 에러 메시지 표시 또는 에러 페이지로 리다이렉트
+  // }
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
@@ -78,9 +85,8 @@ export default async function HistoryPage({
                 <td className="px-3 py-2">{tableLabelFor(h.table_name)}</td>
                 <td className="px-3 py-2">
                   <span
-                    className={`inline-flex rounded-full px-2 py-0.5 text-xs ${
-                      ACTION_BADGE[h.action] ?? 'bg-muted text-muted-foreground'
-                    }`}
+                    className={`inline-flex rounded-full px-2 py-0.5 text-xs ${ACTION_BADGE[h.action] ?? 'bg-muted text-muted-foreground'
+                      }`}
                   >
                     {ACTION_LABEL[h.action] ?? h.action}
                   </span>

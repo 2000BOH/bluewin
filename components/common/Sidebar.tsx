@@ -1,6 +1,6 @@
 'use client'
 
-// 사이드바 네비게이션 (3그룹: 분양관리 / 객실·영선 관리 / 공통).
+// 사이드바 네비게이션 (민원접수 / 객실·영선 관리 / 분양관리 / R&R / 공통).
 // - 데스크톱: 항상 표시
 // - 모바일: open 상태일 때 오버레이로 표시
 
@@ -12,16 +12,31 @@ import { cn } from '@/lib/utils'
 type MenuItem = { label: string; href: string }
 type MenuGroup = { title: string; items: MenuItem[] }
 
-// CLAUDE.md 사이드바 메뉴 구성
+// CLAUDE.md 사이드바 메뉴 구성 (PDF 페이지 구성 기준 재편)
+// - 상담관리/상담내역 제거
+// - 민원접수 / 접수현황 / R&R 신설
+// - "영선 관리" → "영선" 명칭 변경
 const MENU_GROUPS: MenuGroup[] = [
+  {
+    title: '민원접수',
+    items: [{ label: '민원접수', href: '/complaint' }],
+  },
+  {
+    title: '객실·영선 관리',
+    items: [
+      { label: '접수현황', href: '/maintenance/inbox' },
+      { label: '영선', href: '/maintenance' },
+      { label: '객실이동', href: '/room-transfer' },
+      { label: '객실체크', href: '/room-check' },
+      { label: '객실정비', href: '/room-maintenance' },
+    ],
+  },
   {
     title: '분양관리',
     items: [
       { label: '객실마스터', href: '/room-master' },
       { label: '수분양자마스터', href: '/buyers' },
       { label: '계약관리', href: '/contracts' },
-      { label: '상담관리', href: '/consultations' },
-      { label: '상담내역', href: '/consultation-history' },
       { label: '분양관리 Summary', href: '/summary/sales' },
       { label: '운영숙박 Summary', href: '/summary/operation' },
       { label: '계약기간 만료 객실수', href: '/summary/expiry' },
@@ -29,12 +44,14 @@ const MENU_GROUPS: MenuGroup[] = [
     ],
   },
   {
-    title: '객실·영선 관리',
+    title: 'R&R',
     items: [
-      { label: '영선 관리', href: '/maintenance' },
-      { label: '객실이동', href: '/room-transfer' },
-      { label: '객실체크', href: '/room-check' },
-      { label: '객실정비', href: '/room-maintenance' },
+      { label: '01', href: '/rnr/01' },
+      { label: '02', href: '/rnr/02' },
+      { label: '03', href: '/rnr/03' },
+      { label: '04', href: '/rnr/04' },
+      { label: '05', href: '/rnr/05' },
+      { label: '06', href: '/rnr/06' },
     ],
   },
   {

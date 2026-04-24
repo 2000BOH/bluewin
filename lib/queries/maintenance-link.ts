@@ -1,4 +1,4 @@
-// Phase 8: "영선반" 상태로 전환된 외부 페이지 레코드를 영선 페이지에 자동 등록.
+// Phase 8: "영선" 상태로 전환된 외부 페이지 레코드를 영선 페이지에 자동 등록.
 // 동일 source/source_id 가 이미 존재하면 중복 등록을 막고 기존 레코드 id 를 반환.
 
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -20,7 +20,7 @@ type AutoLinkInput = {
   creator: string
 }
 
-// "영선반" 으로 전환 시 호출. 신규 등록한 maintenance_requests.id 또는 기존 id 를 반환.
+// "영선" 으로 전환 시 호출. 신규 등록한 maintenance_requests.id 또는 기존 id 를 반환.
 export const ensureMaintenanceFromSource = async (
   supabase: Sb,
   input: AutoLinkInput,
@@ -52,9 +52,11 @@ export const ensureMaintenanceFromSource = async (
       contract_id: input.contract_id ?? null,
       request_date: todayKst(),
       urgency: '일반',
-      status: '영선반',
+      status: '영선',
       assigned_to: null,
       action_content: null,
+      stay_type: null,
+      rnr_no: null,
       completed_at: null,
       completed_by: null,
       creator: input.creator,

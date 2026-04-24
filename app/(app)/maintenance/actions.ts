@@ -68,6 +68,8 @@ export async function createMaintenanceAction(
       source: '직접입력',
       source_id: null,
       contract_id: null,
+      stay_type: null,
+      rnr_no: null,
       completed_at: null,
       completed_by: null,
       creator: user.id,

@@ -37,7 +37,7 @@ export default async function RoomMaintenancePage({
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="객실정비 관리"
-        description="청소/수리/비품교체/도배장판/설비/기타 정비 작업을 관리합니다. '영선반' 선택 시 자동 등록."
+        description="청소/수리/비품교체/도배장판/설비/기타 정비 작업을 관리합니다. '영선' 선택 시 자동 등록."
       />
       <TaskTable rows={rows} />
     </div>

@@ -2,7 +2,13 @@
 // 서버 컴포넌트/액션에서 호출. 모든 함수가 supabase 인스턴스를 인자로 받는다.
 
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Database, CommonStatus, UrgencyLevel } from '@/types/supabase'
+import type {
+  Database,
+  CommonStatus,
+  UrgencyLevel,
+  RnrStaffNoEnum,
+  MaintenanceSourceEnum,
+} from '@/types/supabase'
 
 type Sb = SupabaseClient<Database>
 export type MaintenanceRow = Database['public']['Tables']['maintenance_requests']['Row']
@@ -18,6 +24,9 @@ export type MaintenanceFilter = {
   from?: string | null
   to?: string | null
   q?: string | null
+  stayType?: string | null
+  rnrNo?: RnrStaffNoEnum | null
+  source?: MaintenanceSourceEnum | null
 }
 
 export const listMaintenance = async (
@@ -38,6 +47,9 @@ export const listMaintenance = async (
   if (filter.from) query = query.gte('request_date', filter.from)
   if (filter.to) query = query.lte('request_date', filter.to)
   if (filter.q) query = query.or(`title.ilike.%${filter.q}%,content.ilike.%${filter.q}%`)
+  if (filter.stayType) query = query.eq('stay_type', filter.stayType)
+  if (filter.rnrNo) query = query.eq('rnr_no', filter.rnrNo)
+  if (filter.source) query = query.eq('source', filter.source)
 
   const { data, error } = await query
   if (error) throw new Error(error.message)

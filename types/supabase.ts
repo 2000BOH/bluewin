@@ -10,14 +10,15 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export type CommonStatus = '접수' | '처리중' | '영선반' | '외부업체' | '퇴실예정' | '완료'
+export type CommonStatus = '접수' | '영선' | '외부업체' | '퇴실' | '청소' | '완료'
 export type UrgencyLevel = '긴급' | '일반' | '낮음'
 export type UserRole = 'admin' | 'staff' | 'viewer'
 export type BuyerType = '개인' | '법인'
-export type MaintenanceSourceEnum = '직접입력' | 'room-transfer' | 'room-check' | 'room-maintenance'
+export type MaintenanceSourceEnum = '직접입력' | 'complaint' | 'room-transfer' | 'room-check' | 'room-maintenance'
 export type MaintenanceTypeEnum = '청소' | '수리' | '비품교체' | '도배장판' | '설비' | '기타'
 export type OverallCheckStatus = '정상' | '주의' | '불량'
 export type HistoryAction = 'insert' | 'update' | 'delete'
+export type RnrStaffNoEnum = '01' | '02' | '03' | '04' | '05' | '06'
 
 type Authoring = {
   creator: string | null
@@ -38,6 +39,7 @@ export type Database = {
           name: string
           role: UserRole
           assigned_phase: number | null
+          rnr_no: RnrStaffNoEnum | null
           created_at: string
           updated_at: string
         }
@@ -47,10 +49,28 @@ export type Database = {
           name: string
           role?: UserRole
           assigned_phase?: number | null
+          rnr_no?: RnrStaffNoEnum | null
           created_at?: string
           updated_at?: string
         }
         Update: Partial<Database['public']['Tables']['users']['Insert']>
+        Relationships: []
+      }
+
+      rnr_mapping: {
+        Row: {
+          rnr_no: RnrStaffNoEnum
+          name: string | null
+          stay_types: Json
+          updated_at: string
+        }
+        Insert: {
+          rnr_no: RnrStaffNoEnum
+          name?: string | null
+          stay_types?: Json
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['rnr_mapping']['Insert']>
         Relationships: []
       }
 
@@ -176,6 +196,8 @@ export type Database = {
           action_content: string | null
           source: MaintenanceSourceEnum
           source_id: string | null
+          stay_type: string | null
+          rnr_no: RnrStaffNoEnum | null
           completed_at: string | null
           completed_by: string | null
         } & Authoring & Timestamps
@@ -277,6 +299,7 @@ export type Database = {
       maintenance_type: MaintenanceTypeEnum
       overall_check_status: OverallCheckStatus
       history_action: HistoryAction
+      rnr_staff_no: RnrStaffNoEnum
     }
     CompositeTypes: Record<string, never>
   }

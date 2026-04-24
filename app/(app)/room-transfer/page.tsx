@@ -1,5 +1,5 @@
 // 객실이동 (/room-transfer) - Phase 5
-// "영선반" 상태 선택 시 자동으로 영선 페이지에 등록 + 이동 안내.
+// "영선" 상태 선택 시 자동으로 영선 페이지에 등록 + 이동 안내.
 
 import { createServerSupabase } from '@/lib/supabase/server'
 import { listTransfers, type TransferFilter } from '@/lib/queries/room-transfer'
@@ -38,7 +38,7 @@ export default async function RoomTransferPage({
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="객실이동 관리"
-        description="객실 이동 이력을 관리합니다. 상태를 '영선반'으로 변경하면 영선 페이지에 자동 등록됩니다."
+        description="객실 이동 이력을 관리합니다. 상태를 '영선'으로 변경하면 영선 페이지에 자동 등록됩니다."
       />
       <TransferTable rows={rows} />
     </div>

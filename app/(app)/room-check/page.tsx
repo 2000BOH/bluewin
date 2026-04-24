@@ -36,7 +36,7 @@ export default async function RoomCheckPage({
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="객실체크 관리"
-        description="객실 점검 결과를 기록합니다. 처리 상태를 '영선반'으로 변경하면 영선 페이지에 자동 등록됩니다."
+        description="객실 점검 결과를 기록합니다. 처리 상태를 '영선'으로 변경하면 영선 페이지에 자동 등록됩니다."
       />
       <CheckTable rows={rows} />
     </div>

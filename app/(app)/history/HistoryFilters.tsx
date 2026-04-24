@@ -40,7 +40,6 @@ export default function HistoryFilters() {
             <option value="rooms">객실마스터</option>
             <option value="buyers">수분양자</option>
             <option value="contracts">계약</option>
-            <option value="consultations">상담</option>
             <option value="maintenance_requests">영선요청</option>
             <option value="room_transfers">객실이동</option>
             <option value="room_checks">객실체크</option>

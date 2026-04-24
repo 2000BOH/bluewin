@@ -18,7 +18,7 @@ import { todayKst } from '@/lib/utils/format'
 export type TransferFormState = {
   error?: string
   ok?: boolean
-  // 영선반 자동 등록 시, 클라이언트에 안내 다이얼로그 표시용.
+  // 영선 자동 등록 시, 클라이언트에 안내 다이얼로그 표시용.
   maintenanceCreated?: { maintenance_id: string }
 }
 

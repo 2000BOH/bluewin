@@ -41,7 +41,7 @@ export default function CheckForm({ mode, initial, onSuccess }: Props) {
   useEffect(() => {
     if (!state.ok) return
     if (state.maintenanceCreated) {
-      const go = confirm('상태가 "영선반"으로 변경되어 영선 페이지에 자동 등록되었습니다.\n영선 페이지로 이동할까요?')
+      const go = confirm('상태가 "영선"으로 변경되어 영선 페이지에 자동 등록되었습니다.\n영선 페이지로 이동할까요?')
       if (go) {
         router.push('/maintenance')
         return
@@ -100,7 +100,7 @@ export default function CheckForm({ mode, initial, onSuccess }: Props) {
           ))}
         </Select>
       </Field>
-      <Field label="처리 상태" required hint="'영선반' 선택 시 영선 페이지에 자동 등록">
+      <Field label="처리 상태" required hint="'영선' 선택 시 영선 페이지에 자동 등록">
         <Select name="status" defaultValue={initial?.status ?? '접수'} required>
           {COMMON_STATUSES.map((s) => (
             <option key={s} value={s}>

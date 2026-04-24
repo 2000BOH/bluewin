@@ -9,7 +9,7 @@ import { getCurrentAppUser, isAdmin } from '@/lib/auth/current-user'
 import PageHeader from '@/components/common/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Pencil } from 'lucide-react'
-import ContractDetailTabs from './ContractDetailTabs'
+import ContractDetailTabs, { type ComplaintSummary } from './ContractDetailTabs'
 import type { Database } from '@/types/supabase'
 
 type HistoryRow = Database['public']['Tables']['change_history']['Row']
@@ -21,7 +21,7 @@ export default async function ContractDetailPage({ params }: { params: { id: str
   const contract = await getContract(supabase, params.id)
   if (!contract) notFound()
 
-  const [buyer, user, historyRes] = await Promise.all([
+  const [buyer, user, historyRes, complaintsRes] = await Promise.all([
     getBuyer(supabase, contract.buyer_id),
     getCurrentAppUser(),
     supabase
@@ -31,8 +31,17 @@ export default async function ContractDetailPage({ params }: { params: { id: str
       .eq('record_id', params.id)
       .order('changed_at', { ascending: false })
       .limit(200),
+    // 해당 계약(차수+호수) 에 대한 민원/영선 이력.
+    supabase
+      .from('maintenance_requests')
+      .select('id, phase, room_no, title, content, status, stay_type, rnr_no, requester, created_at, source')
+      .eq('phase', contract.phase)
+      .eq('room_no', contract.room_no)
+      .order('created_at', { ascending: false })
+      .limit(100),
   ])
   const history = (historyRes.data ?? []) as HistoryRow[]
+  const complaints = (complaintsRes.data ?? []) as ComplaintSummary[]
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
@@ -50,6 +59,7 @@ export default async function ContractDetailPage({ params }: { params: { id: str
       <ContractDetailTabs
         contract={contract}
         buyer={buyer}
+        complaints={complaints}
         history={history}
         isAdmin={isAdmin(user)}
       />

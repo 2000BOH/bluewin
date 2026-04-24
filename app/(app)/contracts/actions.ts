@@ -58,6 +58,25 @@ const buildPayload = (form: FormData) => ({
   lease_start: dateOpt(form.get('lease_start')),
   lease_end: dateOpt(form.get('lease_end')),
   note: optional(form.get('note')),
+  // Phase C 확장 필드 (폼에서 아직 입력받지 않는 값은 null/false 기본값).
+  total_supply_amount: numOpt(form.get('total_supply_amount')),
+  contract_status: optional(form.get('contract_status')),
+  settlement_date: dateOpt(form.get('settlement_date')),
+  entrustment_date: dateOpt(form.get('entrustment_date')),
+  settlement_amount: numOpt(form.get('settlement_amount')),
+  commission_amount: numOpt(form.get('commission_amount')),
+  rent_free_months: numOpt(form.get('rent_free_months')),
+  stay_agreement: checkbox(form.get('stay_agreement')),
+  prepaid_mgmt_fee: numOpt(form.get('prepaid_mgmt_fee')),
+  furniture_fee: numOpt(form.get('furniture_fee')),
+  joint_purchase_fee: numOpt(form.get('joint_purchase_fee')),
+  prepaid_mgmt_deposit: numOpt(form.get('prepaid_mgmt_deposit')),
+  cash_receipt_reverse: checkbox(form.get('cash_receipt_reverse')),
+  account_holder_name: optional(form.get('account_holder_name')),
+  business_name: optional(form.get('business_name')),
+  representative_name: optional(form.get('representative_name')),
+  deposit_amount: numOpt(form.get('deposit_amount')),
+  monthly_rent: numOpt(form.get('monthly_rent')),
 })
 
 export async function createContractAction(

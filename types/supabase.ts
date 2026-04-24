@@ -154,6 +154,25 @@ export type Database = {
           lease_start: string | null
           lease_end: string | null
           note: string | null
+          // Phase C 확장 (migration 004)
+          total_supply_amount: number | null
+          contract_status: string | null
+          settlement_date: string | null
+          entrustment_date: string | null
+          settlement_amount: number | null
+          commission_amount: number | null
+          rent_free_months: number | null
+          stay_agreement: boolean
+          prepaid_mgmt_fee: number | null
+          furniture_fee: number | null
+          joint_purchase_fee: number | null
+          prepaid_mgmt_deposit: number | null
+          cash_receipt_reverse: boolean
+          account_holder_name: string | null
+          business_name: string | null
+          representative_name: string | null
+          deposit_amount: number | null
+          monthly_rent: number | null
         } & Authoring & Timestamps
         Insert: Omit<Database['public']['Tables']['contracts']['Row'], 'id' | 'created_at' | 'updated_at'> &
           Partial<Pick<Database['public']['Tables']['contracts']['Row'], 'id' | 'created_at' | 'updated_at'>>

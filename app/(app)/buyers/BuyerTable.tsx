@@ -95,7 +95,72 @@ export default function BuyerTable({ rows, counts }: Props) {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border bg-card">
+      {/* 모바일: 카드형 목록 */}
+      <div className="sm:hidden space-y-2">
+        {rows.length === 0 ? (
+          <div className="rounded-lg border bg-card p-6">
+            <EmptyState description="등록된 수분양자가 없습니다." />
+          </div>
+        ) : (
+          rows.map((b, idx) => {
+            const c = counts[b.id] ?? { active: 0, ended: 0 }
+            return (
+              <div key={b.id} className="rounded-lg border bg-card p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-xs text-muted-foreground">#{idx + 1}</span>
+                      <span className="font-mono text-xs">{b.buyer_no}</span>
+                      <span className="rounded bg-muted px-1.5 text-[11px]">
+                        {b.buyer_type}
+                      </span>
+                    </div>
+                    <div className="mt-1 truncate text-sm font-semibold">
+                      {b.name1}
+                      {b.name2 ? ` / ${b.name2}` : ''}
+                    </div>
+                  </div>
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setEditTarget(b)}
+                      className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                      aria-label="수정"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(b.id)}
+                      className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                      aria-label="삭제"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+                <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+                  <div>
+                    <div className="text-muted-foreground">계약중</div>
+                    <div className="font-mono font-semibold">{c.active}</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground">해지</div>
+                    <div className="font-mono text-muted-foreground">{c.ended}</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground">연락처</div>
+                    <div className="font-mono">{b.phone1 ?? '-'}</div>
+                  </div>
+                </div>
+              </div>
+            )
+          })
+        )}
+      </div>
+
+      {/* 데스크톱: 테이블 */}
+      <div className="hidden overflow-x-auto rounded-lg border bg-card sm:block">
         <table className="w-full text-sm">
           <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
             <tr>

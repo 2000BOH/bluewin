@@ -45,7 +45,7 @@ const FIELD_LABEL: Record<string, string> = {
   agree_post: '우편수신동의',
   ssn1: '주민번호1',
   ssn2: '주민번호2',
-  // contracts
+  // contracts (탭1~5 기본 필드)
   contract_no: '계약번호',
   buyer_id: '계약자',
   contract_form: '계약형태',
@@ -64,6 +64,31 @@ const FIELD_LABEL: Record<string, string> = {
   tenant_phone: '임차인 연락처',
   lease_start: '임대시작',
   lease_end: '임대종료',
+  // contracts Phase C 확장 (migration 004)
+  total_supply_amount: '총공급금액',
+  contract_status: '계약상태',
+  settlement_date: '계약(잔금)일',
+  entrustment_date: '위탁일',
+  settlement_amount: '확정지급액',
+  commission_amount: '수수료금액',
+  rent_free_months: '렌트프리기간(개월)',
+  stay_agreement: '숙박동의서',
+  prepaid_mgmt_fee: '선수관리비납부',
+  furniture_fee: '비품비납입금',
+  joint_purchase_fee: '가구공동구매입금',
+  prepaid_mgmt_deposit: '선수관리예치금',
+  cash_receipt_reverse: '현금영수증 역발행',
+  account_holder_name: '계좌성명',
+  business_name: '상호',
+  representative_name: '대표자',
+  deposit_amount: '보증금',
+  monthly_rent: '임대료',
+  // maintenance Phase A/B 확장 (migration 003)
+  stay_type: '숙박형태',
+  rnr_no: 'R&R 담당자',
+  // users Phase A 확장
+  assigned_phase: '담당차수',
+  role: '권한',
   // maintenance / common
   requester: '요청자',
   request_date: '요청일',

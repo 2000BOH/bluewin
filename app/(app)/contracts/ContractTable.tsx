@@ -194,7 +194,67 @@ export default function ContractTable({ rows }: Props) {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border bg-card">
+      {/* 모바일(≤sm): 카드형 목록. 기본 11필드의 핵심만 표시. 상세는 카드 클릭. */}
+      <div className="sm:hidden space-y-2">
+        {rows.length === 0 ? (
+          <div className="rounded-lg border bg-card p-6">
+            <EmptyState description="조회된 계약이 없습니다." />
+          </div>
+        ) : (
+          rows.map((r) => (
+            <Link
+              key={r.id}
+              href={`/contracts/${r.id}`}
+              className="block rounded-lg border bg-card p-3 active:bg-muted"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-sm font-mono font-semibold">
+                    {r.phase}차 {r.room_no}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {r.room_type ?? ''} {r.view_type ?? ''}
+                  </span>
+                </div>
+                <StayTypeBadge stayType={r.accommodation_type} size="sm" />
+              </div>
+              <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                <div>
+                  <div className="text-muted-foreground">계약자</div>
+                  <div className="font-medium">{r.buyer_name ?? '-'}</div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground">임차인</div>
+                  <div className="font-medium">{r.tenant_name ?? '-'}</div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground">운영종료</div>
+                  <div className="font-mono">{formatDate(r.operation_end) || '-'}</div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground">임대종료</div>
+                  <div className="font-mono">{formatDate(r.lease_end) || '-'}</div>
+                </div>
+                {r.tenant_phone && (
+                  <div className="col-span-2">
+                    <div className="text-muted-foreground">연락처</div>
+                    <div className="font-mono">{r.tenant_phone}</div>
+                  </div>
+                )}
+                {r.note && (
+                  <div className="col-span-2">
+                    <div className="text-muted-foreground">비고(민원)</div>
+                    <div className="line-clamp-2">{r.note}</div>
+                  </div>
+                )}
+              </div>
+            </Link>
+          ))
+        )}
+      </div>
+
+      {/* 데스크톱(≥sm): 테이블. 컬럼 토글로 추가 컬럼 표시. */}
+      <div className="hidden overflow-x-auto rounded-lg border bg-card sm:block">
         <table className="w-full text-sm">
           <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
             <tr>

@@ -44,14 +44,14 @@ const MENU_GROUPS: MenuGroup[] = [
     ],
   },
   {
+    // R&R: 배정된 담당자만 노출. 번호(04/06)는 숨김 (DB 레코드는 유지).
+    // 이름·직책은 rnr_mapping 의 name 과 1:1 동기화 (migration 005).
     title: 'R&R',
     items: [
-      { label: '01', href: '/rnr/01' },
-      { label: '02', href: '/rnr/02' },
-      { label: '03', href: '/rnr/03' },
-      { label: '04', href: '/rnr/04' },
-      { label: '05', href: '/rnr/05' },
-      { label: '06', href: '/rnr/06' },
+      { label: '유태형 과장', href: '/rnr/01' },
+      { label: '허아름 대리', href: '/rnr/02' },
+      { label: '김동훈 대리', href: '/rnr/03' },
+      { label: '강민수 사원', href: '/rnr/05' },
     ],
   },
   {
@@ -103,7 +103,8 @@ export default function Sidebar({ open, onClose }: Props) {
 
         {/* 메뉴 스크롤 */}
         <nav className="flex-1 overflow-y-auto py-4">
-          <ul className="space-y-1 px-2">
+          {/* 대시보드는 고정 고급 항목 — 그룹 밖에 단독 노출. */}
+          <ul className="space-y-0.5 px-2">
             <li>
               <NavLink href="/dashboard" pathname={pathname} onClick={onClose}>
                 대시보드
@@ -112,11 +113,23 @@ export default function Sidebar({ open, onClose }: Props) {
           </ul>
 
           {MENU_GROUPS.map((group) => (
-            <div key={group.title} className="mt-6">
-              <h2 className="px-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                {group.title}
-              </h2>
-              <ul className="mt-2 space-y-1 px-2">
+            <div key={group.title} className="mt-5">
+              {/* 그룹 제목: 비선택 헤더.
+                  - cursor-default + select-none 으로 '클릭 불가' 시각 신호.
+                  - 좌측 액센트 바 + 우측 구분선으로 항목(NavLink)과 명확히 분리.
+                  - aria-hidden=false + role=heading level=3 로 시맨틱 유지. */}
+              <div
+                className="mb-1.5 flex select-none items-center gap-2 px-4 pt-1 cursor-default"
+                role="heading"
+                aria-level={3}
+              >
+                <span className="h-3 w-1 rounded-full bg-primary/60" aria-hidden />
+                <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                  {group.title}
+                </span>
+                <span className="h-px flex-1 bg-border" aria-hidden />
+              </div>
+              <ul className="space-y-0.5 px-2">
                 {group.items.map((item) => (
                   <li key={item.href}>
                     <NavLink
@@ -154,10 +167,11 @@ function NavLink({
       href={href}
       onClick={onClick}
       className={cn(
-        'flex items-center rounded-md px-3 py-2 text-sm transition-colors',
+        // 좌측 여백(ml-3)으로 그룹 제목보다 한 단계 들여써서 계층 구조를 시각화.
+        'ml-3 flex items-center rounded-md px-3 py-1.5 text-sm transition-colors',
         isActive
-          ? 'bg-primary text-primary-foreground'
-          : 'text-foreground hover:bg-muted',
+          ? 'bg-primary text-primary-foreground shadow-sm'
+          : 'text-foreground/90 hover:bg-muted',
       )}
     >
       {children}

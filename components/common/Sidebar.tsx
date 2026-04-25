@@ -112,38 +112,30 @@ export default function Sidebar({ open, onClose }: Props) {
             </li>
           </ul>
 
-          {MENU_GROUPS.map((group) => (
-            <div key={group.title} className="mt-5">
-              {/* 그룹 제목: 비선택 헤더.
-                  - cursor-default + select-none 으로 '클릭 불가' 시각 신호.
-                  - 좌측 액센트 바 + 우측 구분선으로 항목(NavLink)과 명확히 분리.
-                  - aria-hidden=false + role=heading level=3 로 시맨틱 유지. */}
-              <div
-                className="mb-1.5 flex select-none items-center gap-2 px-4 pt-1 cursor-default"
-                role="heading"
-                aria-level={3}
-              >
-                <span className="h-3 w-1 rounded-full bg-primary/60" aria-hidden />
-                <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                  {group.title}
-                </span>
-                <span className="h-px flex-1 bg-border" aria-hidden />
+          {MENU_GROUPS.map((group) => {
+            return (
+              <div key={group.title} className="mt-7 mb-2">
+                {/* 대제목 (단순 섹션 헤더) */}
+                <div className="mb-3 flex select-none items-center gap-2 px-4">
+                  <span className="text-[14px] font-bold text-foreground">
+                    {group.title}
+                  </span>
+                  <span className="h-px flex-1 bg-border" aria-hidden />
+                </div>
+
+                {/* 소제목 (2열 그리드 버튼형 배치) */}
+                <ul className="grid grid-cols-2 gap-2 px-3">
+                  {group.items.map((item) => (
+                    <li key={item.href}>
+                      <NavLink href={item.href} pathname={pathname} onClick={onClose}>
+                        {item.label}
+                      </NavLink>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <ul className="space-y-0.5 px-2">
-                {group.items.map((item) => (
-                  <li key={item.href}>
-                    <NavLink
-                      href={item.href}
-                      pathname={pathname}
-                      onClick={onClose}
-                    >
-                      {item.label}
-                    </NavLink>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+            )
+          })}
         </nav>
       </aside>
     </>
@@ -167,14 +159,27 @@ function NavLink({
       href={href}
       onClick={onClick}
       className={cn(
-        // 좌측 여백(ml-3)으로 그룹 제목보다 한 단계 들여써서 계층 구조를 시각화.
-        'ml-3 flex items-center rounded-md px-3 py-1.5 text-sm transition-colors',
+        'group flex h-full min-h-[44px] w-full items-center gap-2 rounded-md border px-2 py-1.5 transition-all duration-200',
         isActive
-          ? 'bg-primary text-primary-foreground shadow-sm'
-          : 'text-foreground/90 hover:bg-muted',
+          ? 'border-primary/40 bg-primary/10 shadow-sm'
+          : 'border-border/50 bg-muted/10 hover:border-border hover:bg-muted/50 shadow-sm',
       )}
     >
-      {children}
+      <span
+        className={cn(
+          "h-3 w-1 shrink-0 rounded-full transition-colors",
+          isActive ? "bg-primary" : "bg-primary/40 group-hover:bg-primary/60"
+        )}
+        aria-hidden
+      />
+      <span
+        className={cn(
+          "text-[13px] font-semibold leading-snug transition-colors",
+          isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+        )}
+      >
+        {children}
+      </span>
     </Link>
   )
 }

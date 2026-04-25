@@ -1,41 +1,123 @@
 'use server'
 
-// 민원접수 서버 액션.
-// - maintenance_requests 에 source='complaint' 로 레코드를 생성한다.
-// - 숙박형태 기반으로 R&R 담당자 번호를 자동 배분 (rnr_mapping.stay_types 기반).
-// - 상태는 기본 '접수' → /maintenance/inbox (접수현황) 에 노출된다.
-
 import { revalidatePath } from 'next/cache'
 import { createServerSupabase } from '@/lib/supabase/server'
+import { createServiceSupabase } from '@/lib/supabase/service'
 import { getCurrentAppUser } from '@/lib/auth/current-user'
 import { todayKst } from '@/lib/utils/format'
 import { loadRnrRules } from '@/lib/queries/rnr'
 import { assignRnrByStayType } from '@/lib/utils/rnr'
 import type { StayType } from '@/types/status'
-import type { CommonStatus, MaintenanceSourceEnum } from '@/types/supabase'
+import type { CommonStatus, MaintenanceSourceEnum, RnrStaffNoEnum } from '@/types/supabase'
 
 export type ComplaintFormState = {
   error?: string
   ok?: boolean
-  // UI 안내용: 자동 배분된 담당자 번호 (없으면 미배분).
   assignedRnrNo?: string | null
+  savedContract?: boolean
 }
 
-const required = (v: FormDataEntryValue | null, name: string): string => {
-  const s = String(v ?? '').trim()
-  if (!s) throw new Error(`${name} 필수입니다.`)
-  return s
+const opt = (v: FormDataEntryValue | null): string | null => {
+  const s = String(v ?? '').trim(); return s || null
 }
-
-const optional = (v: FormDataEntryValue | null): string | null => {
-  const s = String(v ?? '').trim()
-  return s ? s : null
+const req = (v: FormDataEntryValue | null, name: string): string => {
+  const s = String(v ?? '').trim(); if (!s) throw new Error(`${name} 필수`); return s
 }
-
 const parsePhase = (v: FormDataEntryValue | null): number => {
-  const n = Number(v)
-  if (!Number.isFinite(n) || n <= 0) throw new Error('차수는 1 이상의 숫자여야 합니다.')
-  return n
+  const n = Number(v); if (!Number.isFinite(n) || n <= 0) throw new Error('차수 오류'); return n
+}
+const mapStatus = (v: string | null): CommonStatus => {
+  if (v === '영선이관') return '영선'
+  if (v === '외부업체') return '외부업체'
+  if (v === '완료') return '완료'
+  return '접수'
+}
+const toNum = (v: string | null) => v !== null ? (Number(v.replace(/,/g, '')) || null) : null
+const toBool = (v: string | null) => v === 'true' ? true : v === 'false' ? false : null
+
+const FIELD_KO: Record<string, string> = {
+  contract_no: '계약번호', contract_form: '계약형태', contract_date: '계약일',
+  contract_status: '계약상태', settlement_date: '정산일', entrustment_date: '위탁일',
+  reverse_issuance: '역발행', operation_type: '운영방식',
+  operation_start: '운영시작일', operation_end: '운영종료일',
+  settlement_amount: '확정지급액', commission_amount: '수수료금액',
+  stay_agreement: '숙박동의서', rent_free_months: '렌트프리(개월)',
+  initial_cost: '초기비용', move_in_date: '입주일',
+  prepaid_mgmt_fee: '선수관리비', furniture_fee: '비품비',
+  joint_purchase_fee: '가구공동구매', prepaid_mgmt_deposit: '선수관리예치금',
+  cash_receipt_reverse: '현금영수증역발행',
+  account_bank: '은행', account_no: '계좌번호', account_holder_name: '계좌성명',
+  business_no: '사업자번호', business_name: '상호', representative_name: '대표자',
+  accommodation_type: '숙박형태', tenant_name: '임대인', tenant_phone: '임대인연락처',
+  deposit_amount: '보증금', monthly_rent: '임대료',
+  lease_start: '임대시작', lease_end: '임대종료', note: '비고',
+}
+
+async function updateContractInfo(contractId: string, form: FormData, userId: string) {
+  const service = createServiceSupabase()
+
+  const { data: old } = await service
+    .from('contracts')
+    .select('contract_no, contract_form, contract_date, contract_status, settlement_date, entrustment_date, reverse_issuance, operation_type, operation_start, operation_end, settlement_amount, commission_amount, stay_agreement, rent_free_months, initial_cost, move_in_date, prepaid_mgmt_fee, furniture_fee, joint_purchase_fee, prepaid_mgmt_deposit, cash_receipt_reverse, account_bank, account_no, account_holder_name, business_no, business_name, representative_name, accommodation_type, tenant_name, tenant_phone, deposit_amount, monthly_rent, lease_start, lease_end, note')
+    .eq('id', contractId).maybeSingle()
+  if (!old) return
+
+  const strFields = [
+    'contract_no', 'contract_form', 'contract_date', 'contract_status',
+    'settlement_date', 'entrustment_date', 'operation_type', 'operation_start', 'operation_end',
+    'move_in_date', 'account_bank', 'account_no', 'account_holder_name',
+    'business_no', 'business_name', 'representative_name',
+    'accommodation_type', 'tenant_name', 'tenant_phone', 'lease_start', 'lease_end', 'note',
+  ]
+  const numFields = [
+    'settlement_amount', 'commission_amount', 'rent_free_months', 'initial_cost',
+    'prepaid_mgmt_fee', 'furniture_fee', 'joint_purchase_fee', 'prepaid_mgmt_deposit',
+    'deposit_amount', 'monthly_rent',
+  ]
+  const boolFields = ['reverse_issuance', 'stay_agreement', 'cash_receipt_reverse']
+
+  const historyRows: {
+    table_name: string; record_id: string; field_name_ko: string
+    old_value: string | null; new_value: string | null; changed_by: string; action: 'update'
+  }[] = []
+
+  const record = (key: string, oldVal: unknown, newVal: string | null) => {
+    const oldStr = oldVal != null ? String(oldVal) : null
+    if (oldStr !== newVal) historyRows.push({
+      table_name: 'contracts', record_id: contractId,
+      field_name_ko: FIELD_KO[key] ?? key, old_value: oldStr, new_value: newVal,
+      changed_by: userId, action: 'update',
+    })
+  }
+
+  const up: Record<string, string | number | boolean | null> = { updater: userId }
+  for (const k of strFields) {
+    const v = opt(form.get(k))
+    record(k, (old as Record<string, unknown>)[k], v)
+    up[k] = v
+  }
+  for (const k of numFields) {
+    const v = toNum(opt(form.get(k)))
+    record(k, (old as Record<string, unknown>)[k], v != null ? String(v) : null)
+    up[k] = v
+  }
+  for (const k of boolFields) {
+    const raw = opt(form.get(k))
+    const v = raw === 'true' ? true : raw === 'false' ? false : (old as Record<string, unknown>)[k] as boolean | null
+    const oldBool = (old as Record<string, unknown>)[k]
+    if (oldBool !== v) historyRows.push({
+      table_name: 'contracts', record_id: contractId,
+      field_name_ko: FIELD_KO[k] ?? k,
+      old_value: oldBool != null ? String(oldBool) : null,
+      new_value: v != null ? String(v) : null,
+      changed_by: userId, action: 'update',
+    })
+    up[k] = v
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await service.from('contracts').update(up as any).eq('id', contractId)
+  if (historyRows.length > 0) await service.from('change_history').insert(historyRows)
 }
 
 export async function createComplaintAction(
@@ -46,45 +128,45 @@ export async function createComplaintAction(
     const user = await getCurrentAppUser()
     if (!user) return { error: '로그인이 필요합니다.' }
     const supabase = createServerSupabase()
-
     const phase = parsePhase(form.get('phase'))
-    const room_no = required(form.get('room_no'), '호수')
-    const title = required(form.get('title'), '민원제목')
-    const content = optional(form.get('content'))
-    const requester = required(form.get('requester'), '요청자')
-    const stay_type = optional(form.get('stay_type')) as StayType | null
+    const room_no = req(form.get('room_no'), '호수')
 
-    // R&R 자동 배분: DB 규칙 조회 후 숙박형태 매칭.
-    const rules = await loadRnrRules(supabase)
-    const rnr_no = assignRnrByStayType(stay_type, rules)
+    const contractId = opt(form.get('contract_id'))
+    let savedContract = false
+    if (contractId) {
+      await updateContractInfo(contractId, form, user.id)
+      savedContract = true
+    }
 
-    const { error } = await supabase.from('maintenance_requests').insert({
-      phase,
-      room_no,
-      title: `[민원] ${title}`,
-      content,
-      requester,
-      request_date: todayKst(),
-      urgency: '일반',
-      status: '접수' satisfies CommonStatus,
-      source: 'complaint' satisfies MaintenanceSourceEnum,
-      source_id: null,
-      contract_id: null,
-      stay_type,
-      rnr_no,
-      assigned_to: null,
-      action_content: null,
-      completed_at: null,
-      completed_by: null,
-      creator: user.id,
-      updater: user.id,
-    })
-    if (error) return { error: error.message }
+    const titleRaw = opt(form.get('title'))
+    let rnr_no: RnrStaffNoEnum | null = null
+    if (titleRaw) {
+      const requester = opt(form.get('requester')) ?? '미입력'
+      const content = opt(form.get('content'))
+      const action_content = opt(form.get('action_content'))
+      const stay_type = opt(form.get('stay_type')) as StayType | null
+      const status = mapStatus(opt(form.get('complaint_status')))
+      const rules = await loadRnrRules(supabase)
+      rnr_no = assignRnrByStayType(stay_type, rules) as RnrStaffNoEnum | null
+
+      const { error } = await supabase.from('maintenance_requests').insert({
+        phase, room_no, title: `[${titleRaw}]`, content, requester,
+        request_date: todayKst(), urgency: '일반',
+        status: status satisfies CommonStatus,
+        source: 'complaint' satisfies MaintenanceSourceEnum,
+        source_id: null, contract_id: contractId, stay_type, rnr_no,
+        assigned_to: null, action_content, completed_at: null, completed_by: null,
+        creator: user.id, updater: user.id,
+      })
+      if (error) return { error: error.message }
+    }
+
+    if (!titleRaw && !savedContract) return { error: '분류를 선택하거나 객실정보를 수정해 주세요.' }
 
     revalidatePath('/complaint')
     revalidatePath('/maintenance/inbox')
     if (rnr_no) revalidatePath(`/rnr/${rnr_no}`)
-    return { ok: true, assignedRnrNo: rnr_no ?? null }
+    return { ok: true, assignedRnrNo: rnr_no ?? null, savedContract }
   } catch (e) {
     return { error: (e as Error).message }
   }

@@ -1,16 +1,18 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { getCurrentAppUser } from '@/lib/auth/current-user'
 import {
   createBuyer,
   updateBuyer,
   deleteBuyer,
+  encryptSsn,
   type BuyerInsert,
   type BuyerUpdate,
 } from '@/lib/queries/buyers'
-import type { BuyerType } from '@/types/supabase'
+import type { BuyerType, Database } from '@/types/supabase'
 
 export type BuyerFormState = { error?: string; ok?: boolean }
 
@@ -25,12 +27,11 @@ const optional = (v: FormDataEntryValue | null): string | null => {
 }
 const checkbox = (v: FormDataEntryValue | null): boolean => v === 'on'
 
-const buildPayload = (form: FormData) => {
+const buildBasePayload = (form: FormData) => {
   const buyerType = required(form.get('buyer_type'), '개인/법인') as BuyerType
   if (buyerType !== '개인' && buyerType !== '법인') {
     throw new Error('개인/법인 값이 올바르지 않습니다.')
   }
-  // ⚠️ ssn1/ssn2 는 bytea(pgcrypto) 컬럼. Phase 10 에선 RPC 미구현 → 입력 무시.
   return {
     buyer_no: required(form.get('buyer_no'), '계약자번호'),
     buyer_type: buyerType,
@@ -49,9 +50,32 @@ const buildPayload = (form: FormData) => {
     agree_sms: checkbox(form.get('agree_sms')),
     agree_email: checkbox(form.get('agree_email')),
     agree_post: checkbox(form.get('agree_post')),
-    ssn1: null,
-    ssn2: null,
   }
+}
+
+// 신규 등록: 입력된 SSN 은 암호화. 미입력시 null.
+const buildCreatePayload = async (
+  supabase: SupabaseClient<Database>,
+  form: FormData,
+) => ({
+  ...buildBasePayload(form),
+  ssn1: await encryptSsn(supabase, optional(form.get('ssn1'))),
+  ssn2: await encryptSsn(supabase, optional(form.get('ssn2'))),
+})
+
+// 수정: SSN 필드가 빈 값이면 기존 값 유지(키 자체를 payload 에 넣지 않음).
+//      입력값이 있으면 새로 암호화하여 덮어씀.
+const buildUpdatePayload = async (
+  supabase: SupabaseClient<Database>,
+  form: FormData,
+) => {
+  const base = buildBasePayload(form)
+  const ssn1Plain = optional(form.get('ssn1'))
+  const ssn2Plain = optional(form.get('ssn2'))
+  const out: Record<string, unknown> = { ...base }
+  if (ssn1Plain !== null) out.ssn1 = await encryptSsn(supabase, ssn1Plain)
+  if (ssn2Plain !== null) out.ssn2 = await encryptSsn(supabase, ssn2Plain)
+  return out
 }
 
 export async function createBuyerAction(
@@ -62,7 +86,11 @@ export async function createBuyerAction(
     const user = await getCurrentAppUser()
     if (!user) return { error: '로그인이 필요합니다.' }
     const supabase = createServerSupabase()
-    const payload: BuyerInsert = { ...buildPayload(form), creator: user.id, updater: user.id }
+    const payload = {
+      ...(await buildCreatePayload(supabase, form)),
+      creator: user.id,
+      updater: user.id,
+    } as BuyerInsert
     await createBuyer(supabase, payload)
     revalidatePath('/buyers')
     return { ok: true }
@@ -80,7 +108,10 @@ export async function updateBuyerAction(
     if (!user) return { error: '로그인이 필요합니다.' }
     const id = required(form.get('id'), 'id')
     const supabase = createServerSupabase()
-    const payload: BuyerUpdate = { ...buildPayload(form), updater: user.id }
+    const payload = {
+      ...(await buildUpdatePayload(supabase, form)),
+      updater: user.id,
+    } as BuyerUpdate
     await updateBuyer(supabase, id, payload)
     revalidatePath('/buyers')
     return { ok: true }

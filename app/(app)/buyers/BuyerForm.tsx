@@ -56,6 +56,26 @@ export default function BuyerForm({ mode, initial, onSuccess }: Props) {
         </Field>
         <div />
 
+        <Field label="주민번호1" hint={mode === 'edit' ? '비워두면 기존 값 유지' : '예: 901225-1234567'}>
+          <TextInput
+            name="ssn1"
+            type="password"
+            autoComplete="off"
+            placeholder={mode === 'edit' ? '비워두면 기존 값 유지' : '901225-1234567'}
+            defaultValue=""
+          />
+        </Field>
+        <Field label="주민번호2" hint={mode === 'edit' ? '비워두면 기존 값 유지' : '계약자명2 의 주민번호'}>
+          <TextInput
+            name="ssn2"
+            type="password"
+            autoComplete="off"
+            placeholder={mode === 'edit' ? '비워두면 기존 값 유지' : '계약자명2 의 주민번호'}
+            defaultValue=""
+          />
+        </Field>
+        <div />
+
         <Field label="휴대폰1">
           <TextInput name="phone1" defaultValue={initial?.phone1 ?? ''} />
         </Field>
@@ -114,7 +134,7 @@ export default function BuyerForm({ mode, initial, onSuccess }: Props) {
       </div>
 
       <p className="text-xs text-muted-foreground">
-        ※ 주민번호는 보안상 별도 RPC 연동 후 입력 가능합니다 (Phase 10 후속 단계).
+        ※ 주민번호는 서버에서 즉시 암호화(pgp_sym_encrypt)되어 저장됩니다. 화면에는 평문이 다시 표시되지 않습니다.
       </p>
 
       {state.error && (

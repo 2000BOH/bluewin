@@ -4,6 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/supabase'
 
 type Sb = SupabaseClient<Database>
+import { listContracts, type ContractListItem } from './contracts'
 type RoomLite = Pick<
   Database['public']['Tables']['rooms']['Row'],
   'id' | 'phase' | 'room_no' | 'type' | 'view_type' | 'sale_price_excl_vat' | 'sale_price_incl_vat'
@@ -118,61 +119,49 @@ export const getOperationSummary = async (supabase: Sb): Promise<OperationSummar
   )
 }
 
-// 만료 Summary: 임대종료/운영종료가 향후 N일 이내인 계약 목록.
-export type ExpiryRow = {
-  contract_id: string
-  phase: number
-  room_no: string
-  buyer_name: string | null
-  tenant_name: string | null
-  end_date: string
-  end_kind: '임대종료' | '운영종료'
+// 만료 Summary: 운영종료가 타겟 일수 이내인 계약 목록.
+export type ExpiryRow = ContractListItem & {
   days_left: number
 }
 
 export const getExpirySummary = async (
   supabase: Sb,
-  withinDays = 90,
+  targetDays = 90,
 ): Promise<ExpiryRow[]> => {
-  const { data, error } = await supabase
-    .from('contracts')
-    .select('id, phase, room_no, buyer_id, tenant_name, lease_end, operation_end')
-  if (error) throw new Error(error.message)
-
-  const buyerIds = Array.from(new Set((data ?? []).map((c) => c.buyer_id)))
-  const buyerMap = new Map<string, string>()
-  if (buyerIds.length > 0) {
-    const { data: bData } = await supabase.from('buyers').select('id, name1').in('id', buyerIds)
-    for (const b of bData ?? []) buyerMap.set(b.id, b.name1 ?? '')
-  }
+  // 전체 계약 목록 조회 (ContractListItem 형식)
+  const allContracts = await listContracts(supabase)
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
-  const limit = new Date(today.getTime() + withinDays * 24 * 60 * 60 * 1000)
+  const limit = new Date(today.getTime() + targetDays * 24 * 60 * 60 * 1000)
 
   const rows: ExpiryRow[] = []
-  for (const c of data ?? []) {
-    const candidates: Array<{ kind: ExpiryRow['end_kind']; date: string | null }> = [
-      { kind: '임대종료', date: c.lease_end },
-      { kind: '운영종료', date: c.operation_end },
-    ]
-    for (const cand of candidates) {
-      if (!cand.date) continue
-      const d = new Date(cand.date)
-      if (Number.isNaN(d.getTime())) continue
-      if (d > limit) continue
-      const days_left = Math.round((d.getTime() - today.getTime()) / (24 * 60 * 60 * 1000))
-      rows.push({
-        contract_id: c.id,
-        phase: c.phase,
-        room_no: c.room_no,
-        buyer_name: buyerMap.get(c.buyer_id) ?? null,
-        tenant_name: c.tenant_name ?? null,
-        end_date: cand.date,
-        end_kind: cand.kind,
-        days_left,
-      })
+  for (const c of allContracts) {
+    // 1. 사용금지 객실 제외
+    if (c.accommodation_type === '사용금지') continue
+
+    // 2. 오직 운영종료일만 확인
+    if (!c.operation_end) continue
+    const d = new Date(c.operation_end)
+    if (Number.isNaN(d.getTime())) continue
+
+    // 3. 양수/음수에 따른 수집 범위 분할
+    // - 양수(예: 30): 오늘 <= 만료일 <= (오늘 + 30일)
+    // - 음수(예: -30): (오늘 - 30일) <= 만료일 < 오늘
+    let isIncluded = false
+    if (targetDays >= 0) {
+      if (d >= today && d <= limit) isIncluded = true
+    } else {
+      if (d >= limit && d < today) isIncluded = true
     }
+
+    if (!isIncluded) continue
+
+    const days_left = Math.round((d.getTime() - today.getTime()) / (24 * 60 * 60 * 1000))
+    rows.push({
+      ...c,
+      days_left,
+    })
   }
   return rows.sort((a, b) => a.days_left - b.days_left)
 }

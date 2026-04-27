@@ -3,7 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase/service'
-import { RNR_STAFF_MAPPING, type RnrStaffNo } from '@/types/status'
+import { RNR_STAFF_MAPPING } from '@/types/status'
 
 export async function GET(req: NextRequest) {
   const phase = req.nextUrl.searchParams.get('phase')

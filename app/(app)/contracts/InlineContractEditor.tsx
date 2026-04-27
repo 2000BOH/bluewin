@@ -96,7 +96,7 @@ export default function InlineContractEditor({ row, buyers, onClose, onSaved }: 
       </section>
 
       {/* ② 운영정보 */}
-      <section className="rounded-md border bg-background p-3">
+      <section className="rounded-md border bg-muted/30 p-3">
         <h3 className="mb-2 text-xs font-semibold text-muted-foreground">② 운영정보</h3>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
           <Field label="운영방식">
@@ -159,7 +159,7 @@ export default function InlineContractEditor({ row, buyers, onClose, onSaved }: 
       </section>
 
       {/* ④ 금융 / 세금 */}
-      <section className="rounded-md border bg-background p-3">
+      <section className="rounded-md border bg-muted/30 p-3">
         <h3 className="mb-2 text-xs font-semibold text-muted-foreground">④ 금융 / 세금</h3>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
           <Field label="은행">
@@ -217,7 +217,7 @@ export default function InlineContractEditor({ row, buyers, onClose, onSaved }: 
       </section>
 
       {/* ⑥ 비고 (민원) */}
-      <section className="rounded-md border bg-background p-3">
+      <section className="rounded-md border bg-muted/30 p-3">
         <h3 className="mb-2 text-xs font-semibold text-muted-foreground">⑥ 비고 (민원)</h3>
         <Field label="비고">
           <TextArea name="note" rows={2} defaultValue={row.note ?? ''} />

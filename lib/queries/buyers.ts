@@ -1,12 +1,27 @@
 // 수분양자(buyers) CRUD.
-// ⚠️ 주민번호(ssn1/ssn2)는 bytea(pgcrypto pgp_sym_encrypt) 컬럼.
-//    Phase 10 단계에서는 SQL 함수/RPC 연동 미구현 → ssn 입력값은 일단 무시(저장 안 함).
-//    Phase 후속에서 supabase RPC `encrypt_ssn(plain text, key text)` 추가 후 폼 연결 예정.
+// 주민번호(ssn1/ssn2)는 bytea(pgcrypto pgp_sym_encrypt) 컬럼.
+// Supabase RPC `encrypt_ssn(plain text, key text) returns bytea` 를 통해 서버에서 암호화.
+// 평문은 절대 클라이언트/네트워크 로그에 남기지 말 것 — server action 안에서만 사용.
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database, BuyerType } from '@/types/supabase'
 
 type Sb = SupabaseClient<Database>
+
+// 평문 주민번호 → 암호화된 bytea (\x... hex 문자열). 빈 입력은 null 반환.
+export const encryptSsn = async (
+  supabase: Sb,
+  plain: string | null,
+): Promise<string | null> => {
+  if (!plain) return null
+  const key = process.env.SUPABASE_SSN_ENCRYPTION_KEY
+  if (!key) {
+    throw new Error('환경변수 SUPABASE_SSN_ENCRYPTION_KEY 가 설정되지 않았습니다.')
+  }
+  const { data, error } = await supabase.rpc('encrypt_ssn', { plain, key })
+  if (error) throw new Error(`주민번호 암호화 실패: ${error.message}`)
+  return (data as unknown as string) ?? null
+}
 export type BuyerRow = Database['public']['Tables']['buyers']['Row']
 export type BuyerInsert = Database['public']['Tables']['buyers']['Insert']
 export type BuyerUpdate = Database['public']['Tables']['buyers']['Update']

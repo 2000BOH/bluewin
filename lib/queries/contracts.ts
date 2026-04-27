@@ -123,6 +123,8 @@ export const getContract = async (
   supabase: Sb,
   id: string,
 ): Promise<ContractRow | null> => {
+  if (!id || id === 'undefined') return null
+
   const { data, error } = await supabase
     .from('contracts')
     .select('*')

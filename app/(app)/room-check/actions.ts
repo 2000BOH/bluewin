@@ -38,6 +38,18 @@ const numReq = (v: FormDataEntryValue | null, name: string): number => {
   return n
 }
 
+const parsePhotos = (v: FormDataEntryValue | null): string[] => {
+  const raw = String(v ?? '').trim()
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter((u): u is string => typeof u === 'string' && u.length > 0)
+  } catch {
+    return []
+  }
+}
+
 const buildPayload = (form: FormData) => {
   const checklistInput: Record<string, string> = {}
   for (const { key } of CHECKLIST_ITEMS) {
@@ -53,6 +65,7 @@ const buildPayload = (form: FormData) => {
     special_notes: optional(form.get('special_notes')),
     next_check_date: optional(form.get('next_check_date')),
     status: required(form.get('status'), '상태') as CommonStatus,
+    photos: parsePhotos(form.get('photos')),
   }
 }
 
@@ -87,10 +100,11 @@ export async function createCheckAction(
     if (!user) return { error: '로그인이 필요합니다.' }
     const supabase = createServerSupabase()
     const data = buildPayload(form)
+    const { photos, ...rest } = data
     const payload: CheckInsert = {
-      ...data,
+      ...rest,
       contract_id: null,
-      photos: [],
+      photos,
       creator: user.id,
       updater: user.id,
     }
@@ -114,7 +128,8 @@ export async function updateCheckAction(
     const id = required(form.get('id'), 'id')
     const supabase = createServerSupabase()
     const data = buildPayload(form)
-    const payload: CheckUpdate = { ...data, updater: user.id }
+    const { photos, ...rest } = data
+    const payload: CheckUpdate = { ...rest, photos, updater: user.id }
     await updateCheck(supabase, id, payload)
     const link = await linkMaintenanceIfNeeded(id, data, user.id)
     revalidatePath('/room-check')

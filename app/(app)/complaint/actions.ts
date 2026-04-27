@@ -33,7 +33,6 @@ const mapStatus = (v: string | null): CommonStatus => {
   return '접수'
 }
 const toNum = (v: string | null) => v !== null ? (Number(v.replace(/,/g, '')) || null) : null
-const toBool = (v: string | null) => v === 'true' ? true : v === 'false' ? false : null
 
 const FIELD_KO: Record<string, string> = {
   contract_no: '계약번호', contract_form: '계약형태', contract_date: '계약일',

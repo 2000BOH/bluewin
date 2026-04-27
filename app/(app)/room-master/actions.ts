@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createServerSupabase } from '@/lib/supabase/server'
-import { getCurrentAppUser, isAdmin } from '@/lib/auth/current-user'
+import { getCurrentAppUser } from '@/lib/auth/current-user'
 import {
   createRoom,
   updateRoom,
@@ -56,7 +56,6 @@ export async function createRoomAction(
   try {
     const user = await getCurrentAppUser()
     if (!user) return { error: '로그인이 필요합니다.' }
-    if (!isAdmin(user)) return { error: '관리자만 등록할 수 있습니다.' }
     const supabase = createServerSupabase()
     const payload: RoomInsert = { ...buildPayload(form), creator: user.id, updater: user.id }
     await createRoom(supabase, payload)
@@ -74,7 +73,6 @@ export async function updateRoomAction(
   try {
     const user = await getCurrentAppUser()
     if (!user) return { error: '로그인이 필요합니다.' }
-    if (!isAdmin(user)) return { error: '관리자만 수정할 수 있습니다.' }
     const id = required(form.get('id'), 'id')
     const supabase = createServerSupabase()
     const payload: RoomUpdate = { ...buildPayload(form), updater: user.id }
@@ -88,7 +86,7 @@ export async function updateRoomAction(
 
 export async function deleteRoomAction(form: FormData): Promise<void> {
   const user = await getCurrentAppUser()
-  if (!user || !isAdmin(user)) return
+  if (!user) return
   const id = String(form.get('id') ?? '').trim()
   if (!id) return
   const supabase = createServerSupabase()

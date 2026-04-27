@@ -1,7 +1,7 @@
 // 계약 상세 (/contracts/[id]) - Phase 12
 
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { getContract } from '@/lib/queries/contracts'
 import { getBuyer } from '@/lib/queries/buyers'
@@ -17,6 +17,10 @@ type HistoryRow = Database['public']['Tables']['change_history']['Row']
 export const dynamic = 'force-dynamic'
 
 export default async function ContractDetailPage({ params }: { params: { id: string } }) {
+  // 잘못된 id 값(예: 'undefined')으로 접근 시 목록으로 리다이렉트
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  if (!params.id || !UUID_REGEX.test(params.id)) redirect('/contracts')
+
   const supabase = createServerSupabase()
   const contract = await getContract(supabase, params.id)
   if (!contract) notFound()

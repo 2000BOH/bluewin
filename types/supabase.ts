@@ -308,7 +308,12 @@ export type Database = {
       }
     }
     Views: Record<string, never>
-    Functions: Record<string, never>
+    Functions: {
+      encrypt_ssn: {
+        Args: { plain: string; key: string }
+        Returns: string
+      }
+    }
     Enums: {
       common_status: CommonStatus
       urgency_level: UrgencyLevel

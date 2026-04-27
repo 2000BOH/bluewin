@@ -12,6 +12,16 @@ import {
   getRecentInbox,
   getExpiringContracts,
 } from '@/lib/queries/dashboard'
+import {
+  getSalesSummary,
+  getMaintenanceStatusDist,
+  getMonthlyNewContracts,
+} from '@/lib/queries/summary'
+import {
+  SalesByPhaseChart,
+  MaintenanceStatusDonut,
+  MonthlyContractsLine,
+} from './Charts'
 import StatusBadge from '@/components/common/StatusBadge'
 import StayTypeBadge from '@/components/common/StayTypeBadge'
 import EmptyState from '@/components/common/EmptyState'
@@ -37,6 +47,9 @@ export default async function DashboardPage() {
     expiringCount,
     recentInbox,
     expiringContracts,
+    salesSummary,
+    statusDist,
+    monthlyContracts,
   ] = await Promise.all([
     getMaintenanceStatusCounts(supabase),
     getRnrCounts(supabase),
@@ -44,6 +57,9 @@ export default async function DashboardPage() {
     getExpiringContractCount(supabase, 90),
     getRecentInbox(supabase, 5),
     getExpiringContracts(supabase, 90, 5),
+    getSalesSummary(supabase),
+    getMaintenanceStatusDist(supabase),
+    getMonthlyNewContracts(supabase, 12),
   ])
   const totalMaintenance = Object.values(statusCounts).reduce((a, b) => a + b, 0)
 
@@ -92,6 +108,13 @@ export default async function DashboardPage() {
           accent="bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
           highlight={expiringCount > 0}
         />
+      </section>
+
+      {/* 차트 위젯 (시각화) */}
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <SalesByPhaseChart rows={salesSummary} />
+        <MaintenanceStatusDonut rows={statusDist} />
+        <MonthlyContractsLine rows={monthlyContracts} />
       </section>
 
       {/* 상태별 · R&R별 요약 */}

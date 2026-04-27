@@ -27,7 +27,9 @@ export type CheckFilter = {
   phase?: number | null
   roomNo?: string | null
   status?: CommonStatus | null
+  statusNot?: CommonStatus | null
   overall?: OverallCheckStatus | null
+  checker?: string | null
   from?: string | null
   to?: string | null
 }
@@ -44,8 +46,10 @@ export const listChecks = async (
 
   if (filter.phase != null) query = query.eq('phase', filter.phase)
   if (filter.roomNo) query = query.ilike('room_no', `%${filter.roomNo}%`)
-  if (filter.status) query = query.eq('status', filter.status)
-  if (filter.overall) query = query.eq('overall_status', filter.overall)
+  if (filter.status)    query = query.eq('status', filter.status)
+  if (filter.statusNot) query = query.neq('status', filter.statusNot)
+  if (filter.overall)   query = query.eq('overall_status', filter.overall)
+  if (filter.checker)   query = query.ilike('checker', `%${filter.checker}%`)
   if (filter.from) query = query.gte('check_date', filter.from)
   if (filter.to) query = query.lte('check_date', filter.to)
 

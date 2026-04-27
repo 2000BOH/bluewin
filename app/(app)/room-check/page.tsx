@@ -13,14 +13,20 @@ const pickStr = (v: string | string[] | undefined): string | null =>
   Array.isArray(v) ? v[0] ?? null : v ?? null
 
 const buildFilter = (params: SearchParams): CheckFilter => {
-  const phase = pickStr(params.phase)
+  const done        = pickStr(params.done)
+  const statusParam = pickStr(params.status) as CommonStatus | null
+  const status: CommonStatus | null =
+    statusParam ?? (done === 'done' ? '완료' : null)
+  const statusNot: CommonStatus | null =
+    !statusParam && done === 'undone' ? '완료' : null
+
   return {
-    phase: phase ? Number(phase) : null,
-    roomNo: pickStr(params.room_no),
-    status: (pickStr(params.status) as CommonStatus) || null,
+    status,
+    statusNot,
     overall: (pickStr(params.overall) as OverallCheckStatus) || null,
-    from: pickStr(params.from),
-    to: pickStr(params.to),
+    checker: pickStr(params.checker),
+    from:    pickStr(params.from),
+    to:      pickStr(params.to),
   }
 }
 

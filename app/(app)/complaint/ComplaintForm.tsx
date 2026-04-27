@@ -126,11 +126,8 @@ export default function ComplaintForm({ onRoomChange }: Props) {
     else if (state.assignedRnrNo === null && !state.savedContract) { /* noop */ }
     else if (!state.savedContract) parts.push('민원 접수 완료 (담당자 미배분)')
     setSuccessMsg(parts.join(' · ') || '저장되었습니다.')
-    formRef.current?.reset()
-    setPhase(''); setRoomNo(''); setContract(EMPTY_CONTRACT)
-    setSelectedAcceptor(''); setAcceptorOther('')
-    setExpanded(false); setNotFound(false)
-    onRoomChange?.('', '')
+
+    // 요청에 따라 저장 후 폼 데이터를 초기화하지 않고 그대로 유지합니다.
     const t = setTimeout(() => setSuccessMsg(null), 5000)
     return () => clearTimeout(t)
   }, [state, onRoomChange])

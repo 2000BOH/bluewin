@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { RNR_STAFF_NOS, RNR_STAFF_MAPPING } from '@/types/status'
 
 type MenuItem = { label: string; href: string }
 type MenuGroup = { title: string; items: MenuItem[] }
@@ -35,24 +36,20 @@ const MENU_GROUPS: MenuGroup[] = [
     title: '분양관리',
     items: [
       { label: '객실마스터', href: '/room-master' },
-      { label: '수분양자마스터', href: '/buyers' },
+      { label: '소유주 관리', href: '/buyers' },
       { label: '계약관리', href: '/contracts' },
-      { label: '분양관리 Summary', href: '/summary/sales' },
-      { label: '운영숙박 Summary', href: '/summary/operation' },
-      { label: '계약기간 만료 객실수', href: '/summary/expiry' },
-      { label: '객실현황 데이터', href: '/room-status' },
+      { label: '분양관리 요약', href: '/summary/sales' },
+      { label: '운영숙박 요약', href: '/summary/operation' },
+      { label: '만료 객실수', href: '/summary/expiry' },
+      { label: '객실현황 정보', href: '/room-status' },
     ],
   },
   {
-    // R&R: 배정된 담당자만 노출. 번호(04/06)는 숨김 (DB 레코드는 유지).
-    // 이름·직책은 rnr_mapping 의 name 과 1:1 동기화 (migration 005).
+    // R&R: types/status.ts의 전역 매핑 데이터를 읽어와서 이름이 있는 사람만 자동으로 메뉴를 생성합니다.
     title: 'R&R',
-    items: [
-      { label: '유태형 과장', href: '/rnr/01' },
-      { label: '허아름 대리', href: '/rnr/02' },
-      { label: '김동훈 대리', href: '/rnr/03' },
-      { label: '강민수 사원', href: '/rnr/05' },
-    ],
+    items: RNR_STAFF_NOS
+      .filter((no) => RNR_STAFF_MAPPING[no].trim() !== '')
+      .map((no) => ({ label: RNR_STAFF_MAPPING[no], href: `/rnr/${no}` })),
   },
   {
     title: '공통',
@@ -153,7 +150,11 @@ function NavLink({
   children: React.ReactNode
   onClick: () => void
 }) {
-  const isActive = pathname === href || pathname.startsWith(`${href}/`)
+  // /maintenance 와 /maintenance/inbox 경로가 겹쳐서 둘 다 활성화(하이라이트)되는 현상 방지
+  const isActive =
+    pathname === href ||
+    (pathname.startsWith(`${href}/`) && !(href === '/maintenance' && pathname.startsWith('/maintenance/inbox')))
+
   return (
     <Link
       href={href}

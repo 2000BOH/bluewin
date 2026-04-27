@@ -4,7 +4,7 @@ import { createServerSupabase } from '@/lib/supabase/server'
 import { listTasks, type TaskFilter } from '@/lib/queries/room-maintenance-task'
 import PageHeader from '@/components/common/PageHeader'
 import TaskTable from './TaskTable'
-import type { CommonStatus, MaintenanceTypeEnum } from '@/types/supabase'
+import type { CommonStatus } from '@/types/supabase'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,15 +13,19 @@ const pickStr = (v: string | string[] | undefined): string | null =>
   Array.isArray(v) ? v[0] ?? null : v ?? null
 
 const buildFilter = (params: SearchParams): TaskFilter => {
-  const phase = pickStr(params.phase)
+  const done        = pickStr(params.done)
+  const statusParam = pickStr(params.status) as CommonStatus | null
+  const status: CommonStatus | null =
+    statusParam ?? (done === 'done' ? '완료' : null)
+  const statusNot: CommonStatus | null =
+    !statusParam && done === 'undone' ? '완료' : null
+
   return {
-    phase: phase ? Number(phase) : null,
-    roomNo: pickStr(params.room_no),
-    status: (pickStr(params.status) as CommonStatus) || null,
-    type: (pickStr(params.type) as MaintenanceTypeEnum) || null,
-    assignedTo: pickStr(params.assigned_to),
-    from: pickStr(params.from),
-    to: pickStr(params.to),
+    status,
+    statusNot,
+    requester: pickStr(params.requester),
+    from:      pickStr(params.from),
+    to:        pickStr(params.to),
   }
 }
 

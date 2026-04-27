@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceSupabase } from '@/lib/supabase/service'
+import { RNR_STAFF_MAPPING, type RnrStaffNo } from '@/types/status'
 
 export async function GET(req: NextRequest) {
   const phase = req.nextUrl.searchParams.get('phase')
@@ -39,14 +40,10 @@ export async function GET(req: NextRequest) {
     const active = allRequests.filter((r) => r.status !== '완료')
     const completed = allRequests.filter((r) => r.status === '완료').slice(0, 15)
 
-    // 2. 담당자 이름 맵 (rnr_mapping)
-    const { data: rnrRows } = await supabase
-      .from('rnr_mapping')
-      .select('rnr_no, name')
-    const rnrNameMap: Record<string, string> = {}
-    for (const r of rnrRows ?? []) {
-      if (r.rnr_no) rnrNameMap[r.rnr_no] = r.name ?? r.rnr_no
-    }
+    // 2. 담당자 이름 맵 — types/status.ts RNR_STAFF_MAPPING 단일 원천 사용
+    const rnrNameMap: Record<string, string> = Object.fromEntries(
+      Object.entries(RNR_STAFF_MAPPING).map(([no, name]) => [no, name || no])
+    )
 
     // 3. 해당 객실 계약 id 조회
     const { data: contractRow } = await supabase

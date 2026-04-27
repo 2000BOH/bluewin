@@ -5,7 +5,7 @@ import { createServerSupabase } from '@/lib/supabase/server'
 import { listMaintenance, type MaintenanceFilter } from '@/lib/queries/maintenance'
 import PageHeader from '@/components/common/PageHeader'
 import MaintenanceTable from './MaintenanceTable'
-import type { CommonStatus, UrgencyLevel } from '@/types/supabase'
+import type { CommonStatus } from '@/types/supabase'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,16 +17,21 @@ const pickStr = (v: string | string[] | undefined): string | null => {
 }
 
 const buildFilter = (params: SearchParams): MaintenanceFilter => {
-  const phase = pickStr(params.phase)
+  const done       = pickStr(params.done)         // 'done' | 'undone' | null
+  const statusParam = pickStr(params.status) as CommonStatus | null
+
+  // 처리상태 명시 선택이 완료구분보다 우선
+  const status: CommonStatus | null =
+    statusParam ?? (done === 'done' ? '완료' : null)
+  const statusNot: CommonStatus | null =
+    !statusParam && done === 'undone' ? '완료' : null
+
   return {
-    phase: phase ? Number(phase) : null,
-    roomNo: pickStr(params.room_no),
-    status: (pickStr(params.status) as CommonStatus) || null,
-    urgency: (pickStr(params.urgency) as UrgencyLevel) || null,
-    assignedTo: pickStr(params.assigned_to),
-    from: pickStr(params.from),
-    to: pickStr(params.to),
-    q: pickStr(params.q),
+    status,
+    statusNot,
+    requester: pickStr(params.requester),
+    from:      pickStr(params.from),
+    to:        pickStr(params.to),
   }
 }
 

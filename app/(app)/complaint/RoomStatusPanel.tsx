@@ -38,6 +38,15 @@ type ChangeItem = {
   action: string
 }
 
+type ChangeGroup = {
+  id: string
+  table_name: string
+  changed_by: string | null
+  changed_at: string
+  action: string
+  changes: ChangeItem[]
+}
+
 type PanelData = {
   active: ActiveItem[]
   completed: CompletedItem[]
@@ -155,6 +164,25 @@ export default function RoomStatusPanel({
     )
   }
 
+  // 변경 이력 그룹화 (동일 시간(분 단위), 테이블, 작업자, 액션 묶기)
+  const groupedHistory = data.changeHistory.reduce((acc, item) => {
+    const timeKey = fmtDate(item.changed_at)
+    const key = `${timeKey}_${item.table_name}_${item.changed_by}_${item.action}`
+    if (!acc[key]) {
+      acc[key] = {
+        id: item.id,
+        table_name: item.table_name,
+        changed_by: item.changed_by,
+        changed_at: item.changed_at,
+        action: item.action,
+        changes: [],
+      }
+    }
+    acc[key].changes.push(item)
+    return acc
+  }, {} as Record<string, ChangeGroup>)
+  const historyList = Object.values(groupedHistory).sort((a, b) => new Date(b.changed_at).getTime() - new Date(a.changed_at).getTime())
+
   return (
     <div className="flex flex-col gap-4">
       {/* ── 현재 객실 상태 ── */}
@@ -247,45 +275,55 @@ export default function RoomStatusPanel({
       </PanelShell>
 
       {/* ── 변경 이력 ── */}
-      {data.changeHistory.length > 0 && (
+      {historyList.length > 0 && (
         <PanelShell title="변경 이력">
           <ul className="divide-y">
-            {data.changeHistory.map((item) => (
-              <li key={item.id} className="py-2 px-1">
+            {historyList.map((group) => (
+              <li key={group.id} className="py-2.5 px-1">
                 <div className="flex items-start gap-2">
                   <span className="mt-1.5 flex-shrink-0 w-2 h-2 rounded-full bg-blue-300" />
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1 flex-wrap text-sm">
-                      <span className="text-[10px] text-muted-foreground border rounded px-1">
-                        {TABLE_KO[item.table_name] ?? item.table_name}
-                      </span>
-                      {item.field_name_ko && (
-                        <span className="font-medium">{item.field_name_ko}</span>
-                      )}
-                      {item.action === 'insert' ? (
-                        <span className="text-xs text-muted-foreground">신규 등록</span>
-                      ) : item.action === 'delete' ? (
-                        <span className="text-xs text-destructive">삭제</span>
-                      ) : (
-                        <>
-                          {item.old_value && (
-                            <span className="text-xs line-through text-muted-foreground">
-                              {item.old_value}
-                            </span>
-                          )}
-                          {item.old_value && item.new_value && <span className="text-muted-foreground">→</span>}
-                          {item.new_value && (
-                            <span className="text-xs font-medium text-foreground">
-                              {item.new_value}
-                            </span>
-                          )}
-                        </>
-                      )}
+                    <div className="flex items-center justify-between gap-2 flex-wrap mb-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] text-muted-foreground border rounded px-1">
+                          {TABLE_KO[group.table_name] ?? group.table_name}
+                        </span>
+                        {group.action === 'insert' ? (
+                          <span className="text-xs font-medium text-foreground">신규 등록</span>
+                        ) : group.action === 'delete' ? (
+                          <span className="text-xs font-medium text-destructive">삭제</span>
+                        ) : (
+                          <span className="text-xs font-medium text-foreground">정보 수정</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                        <span>{fmtDate(group.changed_at)}</span>
+                        {group.changed_by && <span>· {group.changed_by}</span>}
+                      </div>
                     </div>
-                    <div className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
-                      <span>{fmtDate(item.changed_at)}</span>
-                      {item.changed_by && <span>· {item.changed_by}</span>}
-                    </div>
+
+                    {group.action === 'update' && (
+                      <div className="space-y-1 bg-muted/30 px-2.5 py-2 rounded-md border border-muted/50">
+                        {group.changes.map((change) => (
+                          <div key={change.id} className="flex items-center gap-1.5 flex-wrap text-xs">
+                            {change.field_name_ko && (
+                              <span className="font-medium text-muted-foreground min-w-[70px] shrink-0">{change.field_name_ko}</span>
+                            )}
+                            {change.old_value && (
+                              <span className="line-through text-muted-foreground/70">
+                                {change.old_value}
+                              </span>
+                            )}
+                            {change.old_value && change.new_value && <span className="text-muted-foreground/70">→</span>}
+                            {change.new_value && (
+                              <span className="font-medium text-foreground">
+                                {change.new_value}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </li>

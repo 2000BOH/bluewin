@@ -12,12 +12,11 @@ import {
   getRecentInbox,
   getExpiringContracts,
 } from '@/lib/queries/dashboard'
-import { listRnrMapping, buildRnrNameMap } from '@/lib/queries/rnr'
 import StatusBadge from '@/components/common/StatusBadge'
 import StayTypeBadge from '@/components/common/StayTypeBadge'
 import EmptyState from '@/components/common/EmptyState'
 import { formatDate, formatDateTime } from '@/lib/utils/format'
-import { COMMON_STATUSES, RNR_STAFF_NOS } from '@/types/status'
+import { COMMON_STATUSES, RNR_STAFF_NOS, RNR_STAFF_MAPPING, type RnrStaffNo } from '@/types/status'
 import type { RnrStaffNoEnum } from '@/types/supabase'
 import {
   ClipboardList,
@@ -38,7 +37,6 @@ export default async function DashboardPage() {
     expiringCount,
     recentInbox,
     expiringContracts,
-    rnrMapping,
   ] = await Promise.all([
     getMaintenanceStatusCounts(supabase),
     getRnrCounts(supabase),
@@ -46,9 +44,7 @@ export default async function DashboardPage() {
     getExpiringContractCount(supabase, 90),
     getRecentInbox(supabase, 5),
     getExpiringContracts(supabase, 90, 5),
-    listRnrMapping(supabase),
   ])
-  const nameMap = buildRnrNameMap(rnrMapping)
   const totalMaintenance = Object.values(statusCounts).reduce((a, b) => a + b, 0)
 
   return (
@@ -140,7 +136,7 @@ export default async function DashboardPage() {
                 <div className="flex flex-col">
                   <span className="text-xs font-mono text-muted-foreground">{no}</span>
                   <span className="text-sm font-medium">
-                    {nameMap[no as RnrStaffNoEnum] ?? '(미지정)'}
+                    {RNR_STAFF_MAPPING[no as RnrStaffNo] || '(미지정)'}
                   </span>
                 </div>
                 <span className="text-sm font-semibold">{rnrCounts[no as RnrStaffNoEnum]}</span>
@@ -191,7 +187,7 @@ export default async function DashboardPage() {
                           href={`/rnr/${row.rnr_no}`}
                           className="text-primary underline-offset-2 hover:underline"
                         >
-                          {row.rnr_no} {nameMap[row.rnr_no] ?? ''}
+                          {row.rnr_no} {RNR_STAFF_MAPPING[row.rnr_no as RnrStaffNo] ?? ''}
                         </Link>
                       ) : (
                         <span className="text-muted-foreground">미배분</span>

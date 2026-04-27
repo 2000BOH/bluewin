@@ -3,16 +3,15 @@
 import { useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Field, Select, TextInput } from '@/components/common/FormField'
+import RoomFilterBar from '@/components/common/RoomFilterBar'
 import StatusBadge from '@/components/common/StatusBadge'
 import Modal from '@/components/common/Modal'
 import EmptyState from '@/components/common/EmptyState'
 import CheckForm from './CheckForm'
 import { deleteCheckAction } from './actions'
-import { COMMON_STATUSES } from '@/types/status'
 import { formatDate } from '@/lib/utils/format'
 import type { CheckRow } from '@/lib/queries/room-check'
-import { Pencil, Plus, RefreshCw, Search, Trash2 } from 'lucide-react'
+import { Pencil, Plus, Trash2 } from 'lucide-react'
 
 const OVERALL_COLOR: Record<string, string> = {
   정상: 'text-green-600',
@@ -30,25 +29,23 @@ export default function CheckTable({ rows }: Props) {
   const [createOpen, setCreateOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<CheckRow | null>(null)
 
-  const [phase, setPhase] = useState(params.get('phase') ?? '')
-  const [roomNo, setRoomNo] = useState(params.get('room_no') ?? '')
-  const [status, setStatus] = useState(params.get('status') ?? '')
-  const [overall, setOverall] = useState(params.get('overall') ?? '')
-  const [from, setFrom] = useState(params.get('from') ?? '')
-  const [to, setTo] = useState(params.get('to') ?? '')
+  const [done,      setDone]      = useState(params.get('done') ?? '')
+  const [requester, setRequester] = useState(params.get('checker') ?? '')
+  const [status,    setStatus]    = useState(params.get('status') ?? '')
+  const [from,      setFrom]      = useState(params.get('from') ?? '')
+  const [to,        setTo]        = useState(params.get('to') ?? '')
 
   const apply = () => {
     const sp = new URLSearchParams()
-    if (phase) sp.set('phase', phase)
-    if (roomNo) sp.set('room_no', roomNo)
-    if (status) sp.set('status', status)
-    if (overall) sp.set('overall', overall)
-    if (from) sp.set('from', from)
-    if (to) sp.set('to', to)
+    if (done)      sp.set('done',    done)
+    if (requester) sp.set('checker', requester)
+    if (status)    sp.set('status',  status)
+    if (from)      sp.set('from',    from)
+    if (to)        sp.set('to',      to)
     startTransition(() => router.push(`/room-check?${sp.toString()}`))
   }
   const reset = () => {
-    setPhase(''); setRoomNo(''); setStatus(''); setOverall(''); setFrom(''); setTo('')
+    setDone(''); setRequester(''); setStatus(''); setFrom(''); setTo('')
     startTransition(() => router.push('/room-check'))
   }
   const handleDelete = (id: string) => {
@@ -63,43 +60,22 @@ export default function CheckTable({ rows }: Props) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border bg-card p-4">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          <Field label="차수">
-            <TextInput type="number" min={1} value={phase} onChange={(e) => setPhase(e.target.value)} />
-          </Field>
-          <Field label="호수">
-            <TextInput value={roomNo} onChange={(e) => setRoomNo(e.target.value)} />
-          </Field>
-          <Field label="처리 상태">
-            <Select value={status} onChange={(e) => setStatus(e.target.value)}>
-              <option value="">전체</option>
-              {COMMON_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-            </Select>
-          </Field>
-          <Field label="전체 상태">
-            <Select value={overall} onChange={(e) => setOverall(e.target.value)}>
-              <option value="">전체</option>
-              <option value="정상">정상</option>
-              <option value="주의">주의</option>
-              <option value="불량">불량</option>
-            </Select>
-          </Field>
-          <Field label="점검일 시작">
-            <TextInput type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-          </Field>
-          <Field label="점검일 종료">
-            <TextInput type="date" value={to} onChange={(e) => setTo(e.target.value)} />
-          </Field>
-        </div>
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-          <div className="text-xs text-muted-foreground">총 <span className="font-semibold text-foreground">{rows.length}</span>건</div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={reset}><RefreshCw className="mr-1 h-3.5 w-3.5" /> 초기화</Button>
-            <Button size="sm" onClick={apply}><Search className="mr-1 h-3.5 w-3.5" /> 조회</Button>
-            <Button size="sm" onClick={() => setCreateOpen(true)}><Plus className="mr-1 h-3.5 w-3.5" /> 등록</Button>
-          </div>
-        </div>
+      <RoomFilterBar
+        done={done}           onDoneChange={setDone}
+        receiverLabel="점검자"
+        receiver={requester}  onReceiverChange={setRequester}
+        status={status}       onStatusChange={setStatus}
+        dateFrom={from}       onDateFromChange={setFrom}
+        dateTo={to}           onDateToChange={setTo}
+        onSearch={apply}
+        onReset={reset}
+      />
+
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <span>총 <span className="font-semibold text-foreground">{rows.length}</span>건</span>
+        <Button size="sm" onClick={() => setCreateOpen(true)}>
+          <Plus className="mr-1 h-3.5 w-3.5" /> 등록
+        </Button>
       </div>
 
       <div className="overflow-x-auto rounded-lg border bg-card">

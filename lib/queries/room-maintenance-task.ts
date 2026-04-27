@@ -21,8 +21,9 @@ export type TaskFilter = {
   phase?: number | null
   roomNo?: string | null
   status?: CommonStatus | null
+  statusNot?: CommonStatus | null
   type?: MaintenanceTypeEnum | null
-  assignedTo?: string | null
+  requester?: string | null
   from?: string | null
   to?: string | null
 }
@@ -36,9 +37,10 @@ export const listTasks = async (supabase: Sb, filter: TaskFilter = {}): Promise<
 
   if (filter.phase != null) query = query.eq('phase', filter.phase)
   if (filter.roomNo) query = query.ilike('room_no', `%${filter.roomNo}%`)
-  if (filter.status) query = query.eq('status', filter.status)
+  if (filter.status)    query = query.eq('status', filter.status)
+  if (filter.statusNot) query = query.neq('status', filter.statusNot)
   if (filter.type) query = query.eq('maintenance_type', filter.type)
-  if (filter.assignedTo) query = query.ilike('assigned_to', `%${filter.assignedTo}%`)
+  if (filter.requester) query = query.ilike('requester', `%${filter.requester}%`)
   if (filter.from) query = query.gte('request_date', filter.from)
   if (filter.to) query = query.lte('request_date', filter.to)
 

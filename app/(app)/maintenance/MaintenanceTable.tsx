@@ -6,16 +6,15 @@
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Field, Select, TextInput } from '@/components/common/FormField'
+import RoomFilterBar from '@/components/common/RoomFilterBar'
 import StatusBadge from '@/components/common/StatusBadge'
 import Modal from '@/components/common/Modal'
 import EmptyState from '@/components/common/EmptyState'
 import MaintenanceForm from './MaintenanceForm'
 import { deleteMaintenanceAction } from './actions'
-import { COMMON_STATUSES, URGENCY_LEVELS } from '@/types/status'
 import { formatDate, formatDateTime } from '@/lib/utils/format'
 import type { MaintenanceRow } from '@/lib/queries/maintenance'
-import { Pencil, Plus, RefreshCw, Search, Trash2 } from 'lucide-react'
+import { Pencil, Plus, Trash2 } from 'lucide-react'
 
 type Props = { rows: MaintenanceRow[] }
 
@@ -33,38 +32,25 @@ export default function MaintenanceTable({ rows }: Props) {
   const [createOpen, setCreateOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<MaintenanceRow | null>(null)
 
-  // 필터 입력 상태 (URL 쿼리에서 초기화).
-  const [phase, setPhase] = useState(params.get('phase') ?? '')
-  const [roomNo, setRoomNo] = useState(params.get('room_no') ?? '')
-  const [status, setStatus] = useState(params.get('status') ?? '')
-  const [urgency, setUrgency] = useState(params.get('urgency') ?? '')
-  const [assignedTo, setAssignedTo] = useState(params.get('assigned_to') ?? '')
-  const [from, setFrom] = useState(params.get('from') ?? '')
-  const [to, setTo] = useState(params.get('to') ?? '')
-  const [q, setQ] = useState(params.get('q') ?? '')
+  // 필터 상태 (URL 쿼리에서 초기화)
+  const [done,      setDone]      = useState(params.get('done') ?? '')
+  const [requester, setRequester] = useState(params.get('requester') ?? '')
+  const [status,    setStatus]    = useState(params.get('status') ?? '')
+  const [from,      setFrom]      = useState(params.get('from') ?? '')
+  const [to,        setTo]        = useState(params.get('to') ?? '')
 
   const applyFilter = () => {
     const sp = new URLSearchParams()
-    if (phase) sp.set('phase', phase)
-    if (roomNo) sp.set('room_no', roomNo)
-    if (status) sp.set('status', status)
-    if (urgency) sp.set('urgency', urgency)
-    if (assignedTo) sp.set('assigned_to', assignedTo)
-    if (from) sp.set('from', from)
-    if (to) sp.set('to', to)
-    if (q) sp.set('q', q)
+    if (done)      sp.set('done',      done)
+    if (requester) sp.set('requester', requester)
+    if (status)    sp.set('status',    status)
+    if (from)      sp.set('from',      from)
+    if (to)        sp.set('to',        to)
     startTransition(() => router.push(`/maintenance?${sp.toString()}`))
   }
 
   const resetFilter = () => {
-    setPhase('')
-    setRoomNo('')
-    setStatus('')
-    setUrgency('')
-    setAssignedTo('')
-    setFrom('')
-    setTo('')
-    setQ('')
+    setDone(''); setRequester(''); setStatus(''); setFrom(''); setTo('')
     startTransition(() => router.push('/maintenance'))
   }
 
@@ -83,64 +69,25 @@ export default function MaintenanceTable({ rows }: Props) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border bg-card p-4">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
-          <Field label="차수">
-            <TextInput type="number" min={1} value={phase} onChange={(e) => setPhase(e.target.value)} />
-          </Field>
-          <Field label="호수">
-            <TextInput value={roomNo} onChange={(e) => setRoomNo(e.target.value)} />
-          </Field>
-          <Field label="상태">
-            <Select value={status} onChange={(e) => setStatus(e.target.value)}>
-              <option value="">전체</option>
-              {COMMON_STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Field label="긴급도">
-            <Select value={urgency} onChange={(e) => setUrgency(e.target.value)}>
-              <option value="">전체</option>
-              {URGENCY_LEVELS.map((u) => (
-                <option key={u} value={u}>
-                  {u}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Field label="담당자">
-            <TextInput value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)} />
-          </Field>
-          <Field label="요청일 시작">
-            <TextInput type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-          </Field>
-          <Field label="요청일 종료">
-            <TextInput type="date" value={to} onChange={(e) => setTo(e.target.value)} />
-          </Field>
-          <Field label="제목/내용">
-            <TextInput value={q} onChange={(e) => setQ(e.target.value)} placeholder="키워드" />
-          </Field>
-        </div>
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-          <div className="text-xs text-muted-foreground">
-            총 <span className="font-semibold text-foreground">{total}</span>건 · 완료{' '}
-            <span className="font-semibold text-foreground">{completed}</span>건
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={resetFilter}>
-              <RefreshCw className="mr-1 h-3.5 w-3.5" /> 초기화
-            </Button>
-            <Button size="sm" onClick={applyFilter}>
-              <Search className="mr-1 h-3.5 w-3.5" /> 조회
-            </Button>
-            <Button size="sm" onClick={() => setCreateOpen(true)}>
-              <Plus className="mr-1 h-3.5 w-3.5" /> 등록
-            </Button>
-          </div>
-        </div>
+      <RoomFilterBar
+        done={done}           onDoneChange={setDone}
+        receiverLabel="접수자"
+        receiver={requester}  onReceiverChange={setRequester}
+        status={status}       onStatusChange={setStatus}
+        dateFrom={from}       onDateFromChange={setFrom}
+        dateTo={to}           onDateToChange={setTo}
+        onSearch={applyFilter}
+        onReset={resetFilter}
+      />
+
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <span>
+          총 <span className="font-semibold text-foreground">{total}</span>건 · 완료{' '}
+          <span className="font-semibold text-foreground">{completed}</span>건
+        </span>
+        <Button size="sm" onClick={() => setCreateOpen(true)}>
+          <Plus className="mr-1 h-3.5 w-3.5" /> 등록
+        </Button>
       </div>
 
       {/* 모바일: 카드형 목록 */}

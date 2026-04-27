@@ -16,15 +16,22 @@ const pickStr = (v: string | string[] | undefined): string | null => {
   return v ?? null
 }
 
-const buildFilter = (params: SearchParams): TransferFilter => ({
-  fromPhase: pickStr(params.from_phase) ? Number(pickStr(params.from_phase)) : null,
-  toPhase: pickStr(params.to_phase) ? Number(pickStr(params.to_phase)) : null,
-  roomNo: pickStr(params.room_no),
-  status: (pickStr(params.status) as CommonStatus) || null,
-  tenantName: pickStr(params.tenant_name),
-  from: pickStr(params.from),
-  to: pickStr(params.to),
-})
+const buildFilter = (params: SearchParams): TransferFilter => {
+  const done        = pickStr(params.done)
+  const statusParam = pickStr(params.status) as CommonStatus | null
+  const status: CommonStatus | null =
+    statusParam ?? (done === 'done' ? '완료' : null)
+  const statusNot: CommonStatus | null =
+    !statusParam && done === 'undone' ? '완료' : null
+
+  return {
+    status,
+    statusNot,
+    tenantName: pickStr(params.tenant_name),
+    from: pickStr(params.from),
+    to:   pickStr(params.to),
+  }
+}
 
 export default async function RoomTransferPage({
   searchParams,

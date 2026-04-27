@@ -19,8 +19,10 @@ export type MaintenanceFilter = {
   phase?: number | null
   roomNo?: string | null
   status?: CommonStatus | null
+  statusNot?: CommonStatus | null
   urgency?: UrgencyLevel | null
   assignedTo?: string | null
+  requester?: string | null
   from?: string | null
   to?: string | null
   q?: string | null
@@ -42,8 +44,10 @@ export const listMaintenance = async (
   if (filter.phase != null) query = query.eq('phase', filter.phase)
   if (filter.roomNo) query = query.ilike('room_no', `%${filter.roomNo}%`)
   if (filter.status) query = query.eq('status', filter.status)
+  if (filter.statusNot) query = query.neq('status', filter.statusNot)
   if (filter.urgency) query = query.eq('urgency', filter.urgency)
   if (filter.assignedTo) query = query.ilike('assigned_to', `%${filter.assignedTo}%`)
+  if (filter.requester)  query = query.ilike('requester',   `%${filter.requester}%`)
   if (filter.from) query = query.gte('request_date', filter.from)
   if (filter.to) query = query.lte('request_date', filter.to)
   if (filter.q) query = query.or(`title.ilike.%${filter.q}%,content.ilike.%${filter.q}%`)

@@ -1,17 +1,18 @@
-// R&R 담당자별 배분현황 (/rnr/[staffNo]) - PDF 페이지 구성 신설
+// R&R 담당자별 배분현황 (/rnr/[staffNo])
 // 담당자(01~06)별로 배분된 민원/영선 요청을 상태 무관하게 전체 조회.
-// 담당자 이름은 rnr_mapping 에서 동적으로 조회하므로 담당자 교체 시 DB 만 바꾸면 반영된다.
+// 담당자 이름: types/status.ts RNR_STAFF_MAPPING (단일 원천) 사용.
+// rnr_mapping DB: 담당자별 숙박형태(stay_types) 규칙 조회 전용.
 
 import { notFound } from 'next/navigation'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { listMaintenance } from '@/lib/queries/maintenance'
-import { listRnrMapping, buildRnrNameMap } from '@/lib/queries/rnr'
+import { listRnrMapping } from '@/lib/queries/rnr'
 import PageHeader from '@/components/common/PageHeader'
 import StatusBadge from '@/components/common/StatusBadge'
 import StayTypeBadge from '@/components/common/StayTypeBadge'
 import EmptyState from '@/components/common/EmptyState'
 import { formatDateTime } from '@/lib/utils/format'
-import { RNR_STAFF_NOS } from '@/types/status'
+import { RNR_STAFF_NOS, RNR_STAFF_MAPPING, type RnrStaffNo } from '@/types/status'
 import type { RnrStaffNoEnum } from '@/types/supabase'
 
 export const dynamic = 'force-dynamic'
@@ -42,8 +43,7 @@ export default async function RnrDetailPage({
     }),
     listRnrMapping(supabase),
   ])
-  const nameMap = buildRnrNameMap(mapping)
-  const currentName = nameMap[params.staffNo] ?? '(이름 미설정)'
+  const currentName = RNR_STAFF_MAPPING[params.staffNo as RnrStaffNo] || '(이름 미설정)'
   const assigned = mapping.find((m) => m.rnr_no === params.staffNo)
   const stayTypes = assigned?.stay_types ?? []
 

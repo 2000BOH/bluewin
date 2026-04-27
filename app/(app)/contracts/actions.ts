@@ -120,6 +120,26 @@ export async function updateContractAction(
   return { ok: true }
 }
 
+// 인라인 수정용 — redirect 없이 ok 만 반환하여 펼치기 행에서 그대로 닫고 router.refresh.
+export async function inlineUpdateContractAction(
+  _prev: ContractFormState,
+  form: FormData,
+): Promise<ContractFormState> {
+  try {
+    const user = await getCurrentAppUser()
+    if (!user) return { error: '로그인이 필요합니다.' }
+    const id = required(form.get('id'), 'id')
+    const supabase = createServerSupabase()
+    const payload: ContractUpdate = { ...buildPayload(form), updater: user.id }
+    await updateContract(supabase, id, payload)
+    revalidatePath('/contracts')
+    revalidatePath(`/contracts/${id}`)
+    return { ok: true, id }
+  } catch (e) {
+    return { error: (e as Error).message }
+  }
+}
+
 export async function deleteContractAction(form: FormData): Promise<void> {
   const user = await getCurrentAppUser()
   if (!user) return

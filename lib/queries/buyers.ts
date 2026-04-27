@@ -17,6 +17,9 @@ export type BuyerFilter = {
   name?: string | null
   phase?: number | null
   roomNo?: string | null
+  contractForm?: string | null
+  accommodationType?: string | null
+  operationType?: string | null
 }
 
 export const listBuyers = async (
@@ -39,11 +42,21 @@ export const listBuyers = async (
   if (error) throw new Error(error.message)
   let rows = (data ?? []) as BuyerRow[]
 
-  // 차수/호수 필터는 contracts 조인 결과로 후처리 (간단화).
-  if (filter.phase != null || filter.roomNo) {
+  // 차수/호수/계약형태/숙박형태/운영방식 필터는 contracts 조인 결과로 후처리 (간단화).
+  const needContract =
+    filter.phase != null ||
+    !!filter.roomNo ||
+    !!filter.contractForm ||
+    !!filter.accommodationType ||
+    !!filter.operationType
+  if (needContract) {
     let cQuery = supabase.from('contracts').select('buyer_id, phase, room_no')
     if (filter.phase != null) cQuery = cQuery.eq('phase', filter.phase)
     if (filter.roomNo) cQuery = cQuery.ilike('room_no', `%${filter.roomNo}%`)
+    if (filter.contractForm) cQuery = cQuery.ilike('contract_form', `%${filter.contractForm}%`)
+    if (filter.accommodationType)
+      cQuery = cQuery.ilike('accommodation_type', `%${filter.accommodationType}%`)
+    if (filter.operationType) cQuery = cQuery.ilike('operation_type', `%${filter.operationType}%`)
     const { data: cData } = await cQuery
     const allowed = new Set((cData ?? []).map((c) => c.buyer_id))
     rows = rows.filter((b) => allowed.has(b.id))

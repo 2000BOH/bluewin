@@ -58,6 +58,19 @@ export const STAY_TYPES = [
 
 export type StayType = (typeof STAY_TYPES)[number]
 
+// 운영방식 — 계약관리·객실마스터·소유주관리 검색 및 계약 등록 폼에서 공용 사용.
+export const OPERATION_TYPES = [
+  '기본',
+  '인스11%',
+  '인스19%',
+  '인스스위트',
+  '자가관리',
+  '자가운영',
+  '잔금대기',
+  '잔금완료',
+] as const
+export type OperationType = (typeof OPERATION_TYPES)[number]
+
 // R&R 담당자 번호 목록.
 export const RNR_STAFF_NOS = ['01', '02', '03', '04', '05', '06'] as const
 export type RnrStaffNo = (typeof RNR_STAFF_NOS)[number]

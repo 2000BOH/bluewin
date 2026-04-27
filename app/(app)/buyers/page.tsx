@@ -21,6 +21,9 @@ const buildFilter = (params: SearchParams): BuyerFilter => {
     name: pickStr(params.name),
     phase: phase ? Number(phase) : null,
     roomNo: pickStr(params.room_no),
+    contractForm: pickStr(params.contract_form),
+    accommodationType: pickStr(params.accommodation_type),
+    operationType: pickStr(params.operation_type),
   }
 }
 

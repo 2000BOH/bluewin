@@ -35,13 +35,25 @@ export default async function ContractsPage({
   const supabase = createServerSupabase()
   const rows = await listContracts(supabase, buildFilter(searchParams))
 
+  // 인라인 편집기에 필요한 계약자 옵션 (buyer_id Select).
+  const { data: buyersData } = await supabase
+    .from('buyers')
+    .select('id, name1, buyer_no')
+    .order('buyer_no', { ascending: true })
+    .limit(2000)
+  const buyerOptions = (buyersData ?? []).map((b) => ({
+    id: b.id,
+    name1: b.name1 ?? '',
+    buyer_no: b.buyer_no ?? '',
+  }))
+
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="계약관리"
-        description="블루오션 레지던스 분양 계약 목록입니다. 행을 클릭하면 상세 페이지로 이동합니다."
+        description="블루오션 레지던스 분양 계약 목록입니다. 행 끝의 펼치기 아이콘으로 전체 컬럼을 보고 인라인 수정할 수 있습니다."
       />
-      <ContractTable rows={rows} />
+      <ContractTable rows={rows} buyerOptions={buyerOptions} />
     </div>
   )
 }

@@ -12,6 +12,9 @@ export type RoomFilter = {
   phase?: number | null
   roomNo?: string | null
   type?: string | null
+  contractForm?: string | null
+  accommodationType?: string | null
+  operationType?: string | null
 }
 
 export const listRooms = async (supabase: Sb, filter: RoomFilter = {}): Promise<RoomRow[]> => {
@@ -28,7 +31,20 @@ export const listRooms = async (supabase: Sb, filter: RoomFilter = {}): Promise<
 
   const { data, error } = await query
   if (error) throw new Error(error.message)
-  return (data ?? []) as RoomRow[]
+  let rows = (data ?? []) as RoomRow[]
+
+  // 계약형태/숙박형태/운영방식 필터는 contracts 조인 결과로 후처리.
+  if (filter.contractForm || filter.accommodationType || filter.operationType) {
+    let cQuery = supabase.from('contracts').select('phase, room_no')
+    if (filter.contractForm) cQuery = cQuery.ilike('contract_form', `%${filter.contractForm}%`)
+    if (filter.accommodationType)
+      cQuery = cQuery.ilike('accommodation_type', `%${filter.accommodationType}%`)
+    if (filter.operationType) cQuery = cQuery.ilike('operation_type', `%${filter.operationType}%`)
+    const { data: cData } = await cQuery
+    const allowed = new Set((cData ?? []).map((c) => `${c.phase}|${c.room_no}`))
+    rows = rows.filter((r) => allowed.has(`${r.phase}|${r.room_no}`))
+  }
+  return rows
 }
 
 export const createRoom = async (supabase: Sb, payload: RoomInsert): Promise<RoomRow> => {

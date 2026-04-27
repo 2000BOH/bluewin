@@ -77,9 +77,9 @@ export default async function MaintenanceInboxPage({
           description="필터를 변경하거나 전체 버튼을 눌러 전체 목록을 확인하세요."
         />
       ) : (
-        <div className="overflow-x-auto rounded-lg border">
+        <div className="data-table-wrap">
           <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-left">
+            <thead className="bg-muted/30 text-left">
               <tr>
                 <th className="px-3 py-2 whitespace-nowrap">No</th>
                 <th className="px-3 py-2 whitespace-nowrap">차수</th>

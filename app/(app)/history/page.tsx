@@ -65,9 +65,9 @@ export default async function HistoryPage({
         description={`전체 데이터 변경 로그 (최근 ${rows.length}건). DB 트리거에 의해 자동 기록됩니다.`}
       />
       <HistoryFilters />
-      <div className="overflow-x-auto rounded-lg border bg-card">
+      <div className="data-table-wrap">
         <table className="w-full text-sm">
-          <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
+          <thead className="bg-muted/30">
             <tr>
               <th className="px-3 py-2 text-left">시각</th>
               <th className="px-3 py-2 text-left">테이블</th>

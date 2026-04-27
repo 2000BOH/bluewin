@@ -13,10 +13,6 @@ import { RNR_STAFF_NOS, RNR_STAFF_MAPPING } from '@/types/status'
 type MenuItem = { label: string; href: string }
 type MenuGroup = { title: string; items: MenuItem[] }
 
-// CLAUDE.md 사이드바 메뉴 구성 (PDF 페이지 구성 기준 재편)
-// - 상담관리/상담내역 제거
-// - 민원접수 / 접수현황 / R&R 신설
-// - "영선 관리" → "영선" 명칭 변경
 const MENU_GROUPS: MenuGroup[] = [
   {
     title: '민원접수',
@@ -45,7 +41,6 @@ const MENU_GROUPS: MenuGroup[] = [
     ],
   },
   {
-    // R&R: types/status.ts의 전역 매핑 데이터를 읽어와서 이름이 있는 사람만 자동으로 메뉴를 생성합니다.
     title: 'R&R',
     items: RNR_STAFF_NOS
       .filter((no) => RNR_STAFF_MAPPING[no].trim() !== '')
@@ -70,7 +65,7 @@ export default function Sidebar({ open, onClose }: Props) {
       {/* 모바일 오버레이 */}
       <div
         className={cn(
-          'fixed inset-0 z-30 bg-black/50 transition-opacity lg:hidden',
+          'fixed inset-0 z-30 bg-black/40 backdrop-blur-sm transition-opacity lg:hidden',
           open ? 'opacity-100' : 'pointer-events-none opacity-0',
         )}
         onClick={onClose}
@@ -79,60 +74,59 @@ export default function Sidebar({ open, onClose }: Props) {
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r bg-background transition-transform lg:static lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-40 flex w-60 flex-col bg-card border-r border-border/60 shadow-sm transition-transform lg:static lg:translate-x-0',
           open ? 'translate-x-0' : '-translate-x-full',
         )}
       >
         {/* 로고 */}
-        <div className="flex h-14 items-center justify-between border-b px-4">
-          <Link href="/dashboard" className="text-lg font-bold" onClick={onClose}>
+        <div className="flex h-13 items-center justify-between border-b border-border/60 px-4 py-3">
+          <Link
+            href="/dashboard"
+            onClick={onClose}
+            className="text-[17px] font-semibold tracking-tight text-foreground hover:text-primary transition-colors"
+          >
             Bluewin
           </Link>
           <button
             type="button"
             aria-label="메뉴 닫기"
             onClick={onClose}
-            className="rounded-md p-1 hover:bg-muted lg:hidden"
+            className="rounded-full p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors lg:hidden"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* 메뉴 스크롤 */}
-        <nav className="flex-1 overflow-y-auto py-4">
-          {/* 대시보드는 고정 고급 항목 — 그룹 밖에 단독 노출. */}
-          <ul className="space-y-0.5 px-2">
-            <li>
-              <NavLink href="/dashboard" pathname={pathname} onClick={onClose}>
-                대시보드
-              </NavLink>
-            </li>
-          </ul>
+        <nav className="flex-1 overflow-y-auto py-3">
+          {/* 대시보드 — 그룹 밖 단독 */}
+          <div className="px-3 mb-1">
+            <NavLink href="/dashboard" pathname={pathname} onClick={onClose}>
+              대시보드
+            </NavLink>
+          </div>
 
-          {MENU_GROUPS.map((group) => {
-            return (
-              <div key={group.title} className="mt-7 mb-2">
-                {/* 대제목 (단순 섹션 헤더) */}
-                <div className="mb-3 flex select-none items-center gap-2 px-4">
-                  <span className="text-[14px] font-bold text-foreground">
-                    {group.title}
-                  </span>
-                  <span className="h-px flex-1 bg-border" aria-hidden />
-                </div>
-
-                {/* 소제목 (2열 그리드 버튼형 배치) */}
-                <ul className="grid grid-cols-2 gap-2 px-3">
-                  {group.items.map((item) => (
-                    <li key={item.href}>
-                      <NavLink href={item.href} pathname={pathname} onClick={onClose}>
-                        {item.label}
-                      </NavLink>
-                    </li>
-                  ))}
-                </ul>
+          {MENU_GROUPS.map((group) => (
+            <div key={group.title} className="mt-5 mb-1">
+              {/* 그룹 제목 */}
+              <div className="px-4 mb-1.5">
+                <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70 select-none">
+                  {group.title}
+                </span>
               </div>
-            )
-          })}
+
+              {/* 메뉴 아이템 2열 그리드 */}
+              <ul className="grid grid-cols-2 gap-1 px-3">
+                {group.items.map((item) => (
+                  <li key={item.href}>
+                    <NavLink href={item.href} pathname={pathname} onClick={onClose}>
+                      {item.label}
+                    </NavLink>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </nav>
       </aside>
     </>
@@ -150,37 +144,26 @@ function NavLink({
   children: React.ReactNode
   onClick: () => void
 }) {
-  // /maintenance 와 /maintenance/inbox 경로가 겹쳐서 둘 다 활성화(하이라이트)되는 현상 방지
   const isActive =
     pathname === href ||
-    (pathname.startsWith(`${href}/`) && !(href === '/maintenance' && pathname.startsWith('/maintenance/inbox')))
+    (pathname.startsWith(`${href}/`) &&
+      !(href === '/maintenance' && pathname.startsWith('/maintenance/inbox')))
 
   return (
     <Link
       href={href}
       onClick={onClick}
       className={cn(
-        'group flex h-full min-h-[44px] w-full items-center gap-2 rounded-md border px-2 py-1.5 transition-all duration-200',
+        'flex min-h-[36px] w-full items-center rounded-lg px-2.5 py-1.5 text-[13px] font-medium leading-snug transition-all duration-150',
         isActive
-          ? 'border-primary/40 bg-primary/10 shadow-sm'
-          : 'border-border/50 bg-muted/10 hover:border-border hover:bg-muted/50 shadow-sm',
+          ? 'bg-primary/10 text-primary font-semibold'
+          : 'text-muted-foreground hover:bg-accent hover:text-foreground',
       )}
     >
-      <span
-        className={cn(
-          "h-3 w-1 shrink-0 rounded-full transition-colors",
-          isActive ? "bg-primary" : "bg-primary/40 group-hover:bg-primary/60"
-        )}
-        aria-hidden
-      />
-      <span
-        className={cn(
-          "text-[13px] font-semibold leading-snug transition-colors",
-          isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
-        )}
-      >
-        {children}
-      </span>
+      {isActive && (
+        <span className="mr-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" aria-hidden />
+      )}
+      {children}
     </Link>
   )
 }

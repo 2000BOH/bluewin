@@ -4,48 +4,67 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    /* ── Apple Design System ─────────────────────────────────────────── */
+
+    /* 페이지 배경 / 본문 */
+    --background: 240 4% 96%;        /* parchment #f5f5f7 */
+    --foreground: 240 3% 12%;        /* ink       #1d1d1f */
+
+    /* 카드 · 팝오버 (배경보다 밝은 흰색) */
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --card-foreground: 240 3% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --radius: 0.5rem;
+    --popover-foreground: 240 3% 12%;
+
+    /* Action Blue */
+    --primary: 211 100% 40%;         /* #0066cc */
+    --primary-foreground: 0 0% 100%;
+
+    /* 보조 버튼 · 칩 */
+    --secondary: 240 6% 97%;         /* surface-pearl #fafafc */
+    --secondary-foreground: 0 0% 20%;
+
+    /* 음소거 영역 (테이블 헤더, 비활성 텍스트) */
+    --muted: 240 6% 97%;
+    --muted-foreground: 0 0% 47%;    /* ink-muted-48 #787878 */
+
+    /* hover 강조 (neutral) */
+    --accent: 240 5% 94%;
+    --accent-foreground: 240 3% 12%;
+
+    /* 경고 */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* 테두리 · 인풋 */
+    --border: 0 0% 87%;              /* hairline #dedede */
+    --input: 0 0% 87%;
+    --ring: 211 100% 40%;            /* focus ring = Action Blue */
+
+    /* 모서리 반경 */
+    --radius: 0.75rem;
   }
 
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --background: 222 47% 11%;
+    --foreground: 0 0% 95%;
+    --card: 222 47% 15%;
+    --card-foreground: 0 0% 95%;
+    --popover: 222 47% 15%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 211 100% 58%;         /* 다크모드 밝은 파랑 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 222 47% 20%;
+    --secondary-foreground: 0 0% 90%;
+    --muted: 222 47% 20%;
+    --muted-foreground: 0 0% 63%;
+    --accent: 222 47% 24%;
+    --accent-foreground: 0 0% 95%;
+    --destructive: 0 63% 31%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
+    --border: 222 47% 22%;
+    --input: 222 47% 22%;
+    --ring: 211 100% 58%;
   }
 }
 
@@ -53,7 +72,73 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+      Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    letter-spacing: -0.1px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* 제목 계열 */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI",
+      system-ui, sans-serif;
+    letter-spacing: -0.3px;
+  }
+
+  /* 숫자 모노 폰트 → 금액·날짜 정렬 개선 */
+  .font-mono {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* 스크롤바 (WebKit) */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/40;
+  }
+}
+
+/* 공통 테이블 스타일 — 모든 데이터 테이블에 적용 */
+@layer components {
+  .data-table-wrap {
+    @apply overflow-x-auto rounded-xl border border-border/60 bg-card shadow-sm;
+  }
+
+  .data-table-wrap table {
+    @apply w-full text-[13px];
+  }
+
+  .data-table-wrap thead tr {
+    @apply border-b border-border/60 bg-muted/40;
+  }
+
+  .data-table-wrap thead th {
+    @apply px-3 py-2.5 text-left text-[11px] font-semibold tracking-wide text-muted-foreground whitespace-nowrap;
+  }
+
+  .data-table-wrap thead th:last-child {
+    @apply text-right;
+  }
+
+  .data-table-wrap tbody tr {
+    @apply border-t border-border/40 transition-colors hover:bg-muted/20;
+  }
+
+  .data-table-wrap tbody td {
+    @apply px-3 py-2 align-middle;
   }
 }

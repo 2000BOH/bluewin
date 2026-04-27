@@ -162,9 +162,9 @@ export default function MaintenanceTable({ rows }: Props) {
       </div>
 
       {/* 데스크톱: 테이블 */}
-      <div className="hidden overflow-x-auto rounded-lg border bg-card sm:block">
+      <div className="hidden data-table-wrap sm:block">
         <table className="w-full text-sm">
-          <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
+          <thead className="bg-muted/30">
             <tr>
               <th className="px-3 py-2 text-left">No</th>
               <th className="px-3 py-2 text-left">차수</th>

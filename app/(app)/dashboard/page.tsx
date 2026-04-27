@@ -66,8 +66,8 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6 p-4 sm:p-6 lg:space-y-8 lg:p-8">
       <header>
-        <h1 className="text-xl font-bold sm:text-2xl">Bluewin 대시보드</h1>
-        <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+        <h1 className="text-[22px] font-semibold tracking-tight sm:text-[26px]">Bluewin 대시보드</h1>
+        <p className="mt-1.5 text-[13px] text-muted-foreground">
           분양 + 객실·영선 통합 관리 시스템. 주요 지표를 한눈에 확인합니다.
         </p>
       </header>
@@ -120,7 +120,7 @@ export default async function DashboardPage() {
       {/* 상태별 · R&R별 요약 */}
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* 상태별 */}
-        <div className="rounded-lg border bg-card p-4">
+        <div className="rounded-xl border border-border/60 bg-card p-4 shadow-sm">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold">민원 상태별 분포</h2>
             <Link href="/maintenance" className="text-xs text-primary hover:underline">
@@ -132,7 +132,7 @@ export default async function DashboardPage() {
               <Link
                 key={s}
                 href={`/maintenance?status=${encodeURIComponent(s)}`}
-                className="flex items-center justify-between rounded-md border bg-background px-3 py-2 hover:bg-muted"
+                className="flex items-center justify-between rounded-lg border border-border/60 bg-background px-3 py-2 hover:bg-accent transition-colors"
               >
                 <StatusBadge status={s} size="sm" />
                 <span className="text-sm font-semibold">{statusCounts[s]}</span>
@@ -142,7 +142,7 @@ export default async function DashboardPage() {
         </div>
 
         {/* R&R별 */}
-        <div className="rounded-lg border bg-card p-4">
+        <div className="rounded-xl border border-border/60 bg-card p-4 shadow-sm">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold">R&R 담당자별 배분</h2>
             <Link href="/rnr/01" className="text-xs text-primary hover:underline">
@@ -154,7 +154,7 @@ export default async function DashboardPage() {
               <Link
                 key={no}
                 href={`/rnr/${no}`}
-                className="flex items-center justify-between rounded-md border bg-background px-3 py-2 hover:bg-muted"
+                className="flex items-center justify-between rounded-lg border border-border/60 bg-background px-3 py-2 hover:bg-accent transition-colors"
               >
                 <div className="flex flex-col">
                   <span className="text-xs font-mono text-muted-foreground">{no}</span>
@@ -170,7 +170,7 @@ export default async function DashboardPage() {
       </section>
 
       {/* 최근 접수 민원 */}
-      <section className="rounded-lg border bg-card p-4">
+      <section className="rounded-xl border border-border/60 bg-card p-4 shadow-sm">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold">최근 접수된 민원 (상태=접수)</h2>
           <Link href="/maintenance/inbox" className="text-xs text-primary hover:underline">
@@ -228,7 +228,7 @@ export default async function DashboardPage() {
       </section>
 
       {/* 만료 임박 계약 */}
-      <section className="rounded-lg border bg-card p-4">
+      <section className="rounded-xl border border-border/60 bg-card p-4 shadow-sm">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold">만료 임박 계약 (90일 이내)</h2>
           <Link href="/summary/expiry" className="text-xs text-primary hover:underline">
@@ -309,8 +309,8 @@ function KpiCard({
   return (
     <Link
       href={href}
-      className={`flex flex-col gap-2 rounded-lg border bg-card p-3 transition hover:shadow-md sm:p-4 ${
-        highlight ? 'ring-1 ring-amber-300 dark:ring-amber-800' : ''
+      className={`flex flex-col gap-2 rounded-xl border border-border/60 bg-card p-3 shadow-sm transition-shadow hover:shadow-md sm:p-4 ${
+        highlight ? 'ring-1 ring-primary/30' : ''
       }`}
     >
       <div className="flex items-center justify-between">
@@ -331,7 +331,7 @@ function QuickLink({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}
-      className="flex items-center justify-center rounded-md border bg-background px-3 py-3 text-sm font-medium hover:bg-muted"
+      className="flex items-center justify-center rounded-xl border border-border/60 bg-card px-3 py-3 text-[13px] font-medium text-foreground hover:bg-accent transition-colors"
     >
       {label}
     </Link>

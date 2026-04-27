@@ -107,9 +107,9 @@ export default function RoomTable({ rows, canEdit }: Props) {
         <div className="mt-2 text-xs text-muted-foreground">총 <span className="font-semibold text-foreground">{rows.length}</span>실</div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border bg-card">
+      <div className="data-table-wrap">
         <table className="w-full text-sm">
-          <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
+          <thead className="bg-muted/30">
             <tr>
               <th className="px-2 py-2 w-8"></th>
               <th className="px-3 py-2 text-left">No</th>

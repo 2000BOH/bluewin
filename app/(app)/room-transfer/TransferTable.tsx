@@ -68,9 +68,9 @@ export default function TransferTable({ rows }: Props) {
         </Button>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border bg-card">
+      <div className="data-table-wrap">
         <table className="w-full text-sm">
-          <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
+          <thead className="bg-muted/30">
             <tr>
               <th className="px-3 py-2 text-left">No</th>
               <th className="px-3 py-2 text-left">차수</th>

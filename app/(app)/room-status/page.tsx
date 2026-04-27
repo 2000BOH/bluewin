@@ -23,9 +23,9 @@ export default async function RoomStatusPage() {
         title="객실현황 데이터"
         description={`전체 ${totals.total}실 / 계약 ${totals.sold}실 / 미계약 ${totals.total - totals.sold}실`}
       />
-      <div className="overflow-x-auto rounded-lg border bg-card">
+      <div className="data-table-wrap">
         <table className="w-full text-sm">
-          <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
+          <thead className="bg-muted/30">
             <tr>
               <th className="px-3 py-2 text-left">차수</th>
               <th className="px-3 py-2 text-left">호수</th>

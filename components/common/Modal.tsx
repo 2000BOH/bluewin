@@ -50,7 +50,7 @@ export default function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -58,31 +58,38 @@ export default function Modal({
     >
       <div
         className={cn(
-          'flex w-full max-h-[90vh] flex-col rounded-lg border bg-background shadow-lg',
+          'flex w-full max-h-[92vh] flex-col rounded-2xl border border-border/60 bg-card shadow-xl',
           SIZE_CLASS[size],
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between border-b px-5 py-4">
+        {/* 헤더 */}
+        <div className="flex items-start justify-between border-b border-border/60 px-6 py-4">
           <div>
-            <h2 className="text-base font-semibold">{title}</h2>
+            <h2 className="text-[16px] font-semibold tracking-tight text-foreground">{title}</h2>
             {description && (
-              <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+              <p className="mt-1 text-[13px] text-muted-foreground">{description}</p>
             )}
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="rounded-full p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
             aria-label="닫기"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
+        {/* 콘텐츠 */}
+        <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
 
-        {footer && <div className="border-t px-5 py-3">{footer}</div>}
+        {/* 푸터 */}
+        {footer && (
+          <div className="border-t border-border/60 px-6 py-4 bg-muted/30 rounded-b-2xl">
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   )

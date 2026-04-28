@@ -1,8 +1,9 @@
-// 분양관리 Summary (/summary/sales) - Phase 18 (재설계)
+// 분양 요약 (/summary/sales)
 // 3개 표 누적 표시:
 //   ① 운영방식: 차수 × 운영방식 (객실 수 + Total)
 //   ② 숙박형태: 차수 × 숙박형태 (객실 수 + Total)
 //   ③ 숙박료:  차수 × 숙박형태 (객실 수 + 숙박료 합계 + Total)
+// 하단: 대시보드 (차수별 분양 현황 / 운영방식 분포 / 숙박료 합계)
 
 import { Fragment } from 'react'
 import { createServerSupabase } from '@/lib/supabase/server'
@@ -10,12 +11,14 @@ import {
   getOperationByPhasePivot,
   getStayByPhasePivot,
   getRentByStayPivot,
+  getSalesSummary,
   type PivotTable,
   type RentPivotTable,
 } from '@/lib/queries/summary'
 import PageHeader from '@/components/common/PageHeader'
 import EmptyState from '@/components/common/EmptyState'
 import { formatCurrency } from '@/lib/utils/format'
+import SalesDashboard from './SalesDashboard'
 
 export const dynamic = 'force-dynamic'
 
@@ -200,16 +203,17 @@ const RentPivotTableComp = ({ pivot }: { pivot: RentPivotTable }) => {
 
 export default async function SummarySalesPage() {
   const supabase = createServerSupabase()
-  const [opPivot, stayPivot, rentPivot] = await Promise.all([
+  const [opPivot, stayPivot, rentPivot, salesByPhase] = await Promise.all([
     getOperationByPhasePivot(supabase),
     getStayByPhasePivot(supabase),
     getRentByStayPivot(supabase),
+    getSalesSummary(supabase),
   ])
 
   return (
     <div className="space-y-8 p-6 lg:p-8">
       <PageHeader
-        title="분양관리 Summary"
+        title="분양 요약"
         description="객실 기준 차수별 운영방식·숙박형태·숙박료 집계 (계약된 객실은 계약 정보, 미계약은 '미계약' 컬럼으로 표시)"
       />
 
@@ -232,6 +236,8 @@ export default async function SummarySalesPage() {
         </p>
         <RentPivotTableComp pivot={rentPivot} />
       </section>
+
+      <SalesDashboard salesByPhase={salesByPhase} opPivot={opPivot} rentPivot={rentPivot} />
     </div>
   )
 }

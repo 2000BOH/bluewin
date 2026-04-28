@@ -16,6 +16,8 @@ import type { CheckRow } from '@/lib/queries/room-check'
 import { compressImage, formatBytes } from '@/lib/utils/image-compress'
 import { uploadRoomCheckPhoto, deleteRoomCheckPhoto } from '@/lib/storage/room-check-photos'
 import { Loader2, Upload, X } from 'lucide-react'
+import { useRoomInput } from '@/hooks/useRoomInput'
+import AutoRoomSummary from '@/components/common/AutoRoomSummary'
 
 const INITIAL: CheckFormState = {}
 const ITEM_OPTS = ['정상', '불량', '해당없음'] as const
@@ -47,8 +49,20 @@ export default function CheckForm({ mode, initial, onSuccess }: Props) {
     ? (initial?.photos as unknown as string[])
     : []
   const [photos, setPhotos] = useState<string[]>(initialPhotos)
-  const [phaseVal, setPhaseVal] = useState<string>(String(initial?.phase ?? ''))
-  const [roomNoVal, setRoomNoVal] = useState<string>(initial?.room_no ?? '')
+  
+  const {
+    phase,
+    roomNo,
+    roomNoRef,
+    handlePhaseChange,
+    handleRoomNoChange,
+    handleRoomCompositionStart,
+    handleRoomCompositionEnd,
+  } = useRoomInput({
+    initialPhase: String(initial?.phase ?? ''),
+    initialRoomNo: initial?.room_no ?? '',
+  })
+  
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement | null>(null)
@@ -69,7 +83,7 @@ export default function CheckForm({ mode, initial, onSuccess }: Props) {
 
   const handleFiles = async (fileList: FileList | null) => {
     if (!fileList || fileList.length === 0) return
-    if (!phaseVal || !roomNoVal) {
+    if (!phase || !roomNo) {
       setUploadError('차수와 호수를 먼저 입력해 주세요. (사진 저장 경로 결정용)')
       return
     }
@@ -81,7 +95,7 @@ export default function CheckForm({ mode, initial, onSuccess }: Props) {
       const newUrls: string[] = []
       for (const file of files) {
         const blob = await compressImage(file, { maxWidth: 1600, quality: 0.8 })
-        const url = await uploadRoomCheckPhoto(blob, { phase: phaseVal, roomNo: roomNoVal })
+        const url = await uploadRoomCheckPhoto(blob, { phase: phase, roomNo: roomNo })
         newUrls.push(url)
       }
       setPhotos((prev) => [...prev, ...newUrls])
@@ -118,18 +132,27 @@ export default function CheckForm({ mode, initial, onSuccess }: Props) {
           type="number"
           min={1}
           required
-          value={phaseVal}
-          onChange={(e) => setPhaseVal(e.target.value)}
+          value={phase}
+          onChange={handlePhaseChange}
         />
       </Field>
-      <Field label="호수" required>
-        <TextInput
-          name="room_no"
-          required
-          value={roomNoVal}
-          onChange={(e) => setRoomNoVal(e.target.value)}
-        />
-      </Field>
+      <div className="flex flex-col gap-1.5">
+        <Field label="호수" required>
+          <TextInput
+            ref={roomNoRef}
+            name="room_no"
+            required
+            value={roomNo}
+            onChange={handleRoomNoChange}
+            onCompositionStart={handleRoomCompositionStart}
+            onCompositionEnd={handleRoomCompositionEnd}
+          />
+        </Field>
+      </div>
+
+      <div className="sm:col-span-2 -mt-2 mb-2">
+        <AutoRoomSummary phase={phase} roomNo={roomNo} />
+      </div>
       <Field label="점검일">
         <TextInput name="check_date" type="date" defaultValue={initial?.check_date ?? ''} />
       </Field>

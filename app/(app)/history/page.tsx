@@ -15,6 +15,13 @@ type SearchParams = Record<string, string | string[] | undefined>
 const pickStr = (v: string | string[] | undefined): string | null =>
   Array.isArray(v) ? v[0] ?? null : v ?? null
 
+const pickNum = (v: string | string[] | undefined): number | null => {
+  const s = pickStr(v)
+  if (!s) return null
+  const n = Number(s)
+  return Number.isFinite(n) ? n : null
+}
+
 const buildFilter = (params: SearchParams): HistoryFilter => {
   const a = pickStr(params.action)
   return {
@@ -23,6 +30,8 @@ const buildFilter = (params: SearchParams): HistoryFilter => {
     from: pickStr(params.from),
     to: pickStr(params.to),
     q: pickStr(params.q),
+    phase: pickNum(params.phase),
+    roomNo: pickStr(params.room_no),
   }
 }
 
@@ -49,22 +58,29 @@ export default async function HistoryPage({
   searchParams: SearchParams
 }) {
   const supabase = createServerSupabase()
-  const rows = await listHistory(supabase, buildFilter(searchParams))
+  // 조회 버튼을 눌러야 결과를 가져온다 (?search=1 토큰).
+  const hasSearch = pickStr(searchParams.search) === '1'
+  const rows = hasSearch ? await listHistory(supabase, buildFilter(searchParams)) : []
 
-  // 에러 핸들링 예시
-  // try {
-  //   const rows = await listHistory(supabase, buildFilter(searchParams))
-  // } catch (error) {
-  //   console.error("Failed to fetch history:", error)
-  //   // 사용자에게 에러 메시지 표시 또는 에러 페이지로 리다이렉트
-  // }
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
         title="수정이력"
-        description={`전체 데이터 변경 로그 (최근 ${rows.length}건). DB 트리거에 의해 자동 기록됩니다.`}
+        description={
+          hasSearch
+            ? `검색 결과 ${rows.length}건. DB 트리거에 의해 자동 기록됩니다.`
+            : '필터를 설정한 뒤 조회 버튼을 눌러주세요.'
+        }
       />
       <HistoryFilters />
+      {!hasSearch ? (
+        <div className="rounded-lg border bg-card p-10">
+          <EmptyState
+            title="조회 버튼을 눌러주세요."
+            description="테이블·날짜·차수·호수·검색어 등 원하는 조건을 설정한 뒤 조회를 실행하세요."
+          />
+        </div>
+      ) : (
       <div className="data-table-wrap">
         <table className="w-full text-sm">
           <thead className="bg-muted/30">
@@ -108,12 +124,13 @@ export default async function HistoryPage({
         {rows.length === 0 && (
           <div className="p-6">
             <EmptyState
-              title="수정이력이 없습니다"
-              description="002_change_history_triggers.sql 마이그레이션이 실행되지 않았거나, 아직 데이터 변경이 없는 상태입니다."
+              title="조건에 맞는 수정이력이 없습니다."
+              description="필터를 변경하거나 초기화 후 다시 조회하세요."
             />
           </div>
         )}
       </div>
+      )}
     </div>
   )
 }

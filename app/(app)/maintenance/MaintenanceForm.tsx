@@ -14,6 +14,8 @@ import {
 } from './actions'
 import { COMMON_STATUSES, URGENCY_LEVELS } from '@/types/status'
 import type { MaintenanceRow } from '@/lib/queries/maintenance'
+import { useRoomInput } from '@/hooks/useRoomInput'
+import AutoRoomSummary from '@/components/common/AutoRoomSummary'
 
 const INITIAL: MaintenanceFormState = {}
 
@@ -36,6 +38,19 @@ export default function MaintenanceForm({ mode, initial, onSuccess }: Props) {
   const action = mode === 'create' ? createMaintenanceAction : updateMaintenanceAction
   const [state, formAction] = useFormState(action, INITIAL)
 
+  const {
+    phase,
+    roomNo,
+    roomNoRef,
+    handlePhaseChange,
+    handleRoomNoChange,
+    handleRoomCompositionStart,
+    handleRoomCompositionEnd,
+  } = useRoomInput({
+    initialPhase: initial?.phase ?? '',
+    initialRoomNo: initial?.room_no ?? '',
+  })
+
   useEffect(() => {
     if (state.ok) onSuccess()
   }, [state, onSuccess])
@@ -52,13 +67,28 @@ export default function MaintenanceForm({ mode, initial, onSuccess }: Props) {
           type="number"
           min={1}
           required
-          defaultValue={initial?.phase ?? ''}
+          value={phase}
+          onChange={handlePhaseChange}
         />
       </Field>
 
-      <Field label="호수" required>
-        <TextInput name="room_no" required defaultValue={initial?.room_no ?? ''} />
-      </Field>
+      <div className="flex flex-col gap-1.5">
+        <Field label="호수" required>
+          <TextInput
+            ref={roomNoRef}
+            name="room_no"
+            required
+            value={roomNo}
+            onChange={handleRoomNoChange}
+            onCompositionStart={handleRoomCompositionStart}
+            onCompositionEnd={handleRoomCompositionEnd}
+          />
+        </Field>
+      </div>
+
+      <div className="sm:col-span-2 -mt-2 mb-2">
+        <AutoRoomSummary phase={phase} roomNo={roomNo} />
+      </div>
 
       <Field label="제목" required className="sm:col-span-2">
         <TextInput name="title" required defaultValue={initial?.title ?? ''} />

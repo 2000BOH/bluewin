@@ -33,9 +33,12 @@ export const Field = ({ label, required, hint, children, className }: LabelProps
   </label>
 )
 
-export const TextInput = (props: InputHTMLAttributes<HTMLInputElement>) => (
-  <input {...props} className={cn(baseInput, props.className)} />
+import { forwardRef } from 'react'
+
+export const TextInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
+  (props, ref) => <input ref={ref} {...props} className={cn(baseInput, props.className)} />
 )
+TextInput.displayName = 'TextInput'
 
 export const TextArea = (props: TextareaHTMLAttributes<HTMLTextAreaElement>) => (
   <textarea {...props} className={cn(baseTextarea, props.className)} />

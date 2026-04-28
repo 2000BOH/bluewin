@@ -150,21 +150,23 @@ export default async function DashboardPage() {
             </Link>
           </div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {RNR_STAFF_NOS.map((no) => (
-              <Link
-                key={no}
-                href={`/rnr/${no}`}
-                className="flex items-center justify-between rounded-lg border border-border/60 bg-background px-3 py-2 hover:bg-accent transition-colors"
-              >
-                <div className="flex flex-col">
-                  <span className="text-xs font-mono text-muted-foreground">{no}</span>
-                  <span className="text-sm font-medium">
-                    {RNR_STAFF_MAPPING[no as RnrStaffNo] || '(미지정)'}
-                  </span>
-                </div>
-                <span className="text-sm font-semibold">{rnrCounts[no as RnrStaffNoEnum]}</span>
-              </Link>
-            ))}
+            {RNR_STAFF_NOS
+              .filter((no) => RNR_STAFF_MAPPING[no as RnrStaffNo].trim() !== '')
+              .map((no) => (
+                <Link
+                  key={no}
+                  href={`/rnr/${no}`}
+                  className="flex items-center justify-between rounded-lg border border-border/60 bg-background px-3 py-2 hover:bg-accent transition-colors"
+                >
+                  <div className="flex flex-col">
+                    <span className="text-xs font-mono text-muted-foreground">{no}</span>
+                    <span className="text-sm font-medium">
+                      {RNR_STAFF_MAPPING[no as RnrStaffNo]}
+                    </span>
+                  </div>
+                  <span className="text-sm font-semibold">{rnrCounts[no as RnrStaffNoEnum]}</span>
+                </Link>
+              ))}
           </div>
         </div>
       </section>

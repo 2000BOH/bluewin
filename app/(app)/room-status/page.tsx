@@ -20,7 +20,7 @@ export default async function RoomStatusPage() {
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        title="객실현황 데이터"
+        title="객실정보"
         description={`전체 ${totals.total}실 / 계약 ${totals.sold}실 / 미계약 ${totals.total - totals.sold}실`}
       />
       <div className="data-table-wrap">

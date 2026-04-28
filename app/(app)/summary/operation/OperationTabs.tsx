@@ -1,9 +1,10 @@
 'use client'
 
-// 운영숙박 Summary / Detail 탭 전환.
+// 숙박 요약 Summary / Detail 탭 전환.
 
 import { Fragment, useState } from 'react'
 import type { PivotTable, OperationDetailTable } from '@/lib/queries/summary'
+import OperationDashboard from './OperationDashboard'
 
 type TabKey = 'summary' | 'detail'
 
@@ -204,10 +205,13 @@ export default function OperationTabs({ summary, detail }: Props) {
       </div>
 
       {tab === 'summary' && (
-        <section className="space-y-3">
-          <SectionHeading>차수별 숙박형태 분포</SectionHeading>
-          <SummaryTable pivot={summary} />
-        </section>
+        <div className="space-y-8">
+          <section className="space-y-3">
+            <SectionHeading>차수별 숙박형태 분포</SectionHeading>
+            <SummaryTable pivot={summary} />
+          </section>
+          <OperationDashboard summary={summary} />
+        </div>
       )}
 
       {tab === 'detail' && (

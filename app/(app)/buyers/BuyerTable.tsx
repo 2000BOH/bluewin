@@ -16,6 +16,7 @@ import { deleteBuyerAction } from './actions'
 import type { BuyerRow, BuyerContractCount } from '@/lib/queries/buyers'
 import { STAY_TYPES, OPERATION_TYPES } from '@/types/status'
 import { ChevronDown, ChevronRight, Plus, RefreshCw, Search, Trash2 } from 'lucide-react'
+import { useRoomInput } from '@/hooks/useRoomInput'
 
 type Props = {
   rows: BuyerRow[]
@@ -32,25 +33,38 @@ export default function BuyerTable({ rows, counts }: Props) {
 
   const [createOpen, setCreateOpen] = useState(false)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
+  const [accType, setAccType] = useState<string>(params.get('accommodation_type') ?? '')
+  const [opType, setOpType] = useState<string>(params.get('operation_type') ?? '')
+  const [name, setName] = useState<string>(params.get('name') ?? '')
 
-  const [phase, setPhase] = useState(params.get('phase') ?? '')
-  const [roomNo, setRoomNo] = useState(params.get('room_no') ?? '')
-  const [accType, setAccType] = useState(params.get('accommodation_type') ?? '')
-  const [opType, setOpType] = useState(params.get('operation_type') ?? '')
-  const [name, setName] = useState(params.get('name') ?? '') // 소유주(계약자명) 검색
-
-  const apply = () => {
+  const applyFetch = (p: string, r: string) => {
     const sp = new URLSearchParams()
-    if (phase) sp.set('phase', phase)
-    if (roomNo) sp.set('room_no', roomNo)
+    if (p) sp.set('phase', p)
+    if (r) sp.set('room_no', r)
     if (accType) sp.set('accommodation_type', accType)
     if (opType) sp.set('operation_type', opType)
     if (name) sp.set('name', name)
     startTransition(() => router.push(`/buyers?${sp.toString()}`))
   }
+
+  const {
+    phase,
+    roomNo,
+    roomNoRef,
+    handlePhaseChange,
+    handleRoomNoChange,
+    handleRoomCompositionStart,
+    handleRoomCompositionEnd,
+  } = useRoomInput({
+    initialPhase: params.get('phase') ?? '',
+    initialRoomNo: params.get('room_no') ?? '',
+    onAutoFetch: applyFetch,
+  })
+
+  const apply = () => applyFetch(phase, roomNo)
   const reset = () => {
-    setPhase(''); setRoomNo(''); setAccType(''); setOpType(''); setName('')
-    startTransition(() => router.push('/buyers'))
+    setAccType(''); setOpType(''); setName('')
+    applyFetch('', '')
   }
   const handleDelete = (id: string) => {
     if (!confirm('이 수분양자를 삭제하시겠습니까?')) return
@@ -73,10 +87,10 @@ export default function BuyerTable({ rows, counts }: Props) {
         {/* 한 행: 필터 5개 + 버튼 (모든 항목을 동일한 행에 배치) */}
         <div className="flex flex-wrap items-end gap-2">
           <Field label="차수" className="min-w-[100px] flex-1">
-            <TextInput type="number" min={1} value={phase} placeholder="전체" onChange={(e) => setPhase(e.target.value)} />
+            <TextInput type="number" min={1} value={phase} placeholder="전체" onChange={handlePhaseChange} />
           </Field>
           <Field label="호수" className="min-w-[100px] flex-1">
-            <TextInput value={roomNo} placeholder="전체" onChange={(e) => setRoomNo(e.target.value)} />
+            <TextInput ref={roomNoRef} value={roomNo} placeholder="전체" onChange={handleRoomNoChange} onCompositionStart={handleRoomCompositionStart} onCompositionEnd={handleRoomCompositionEnd} />
           </Field>
           <Field label="숙박형태" className="min-w-[130px] flex-1">
             <Select value={accType} onChange={(e) => setAccType(e.target.value)}>

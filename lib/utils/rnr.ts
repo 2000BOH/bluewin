@@ -15,14 +15,14 @@ export type RnrRule = {
 }
 
 // CLAUDE.md 의 초기 R&R 규칙.
-// 03 인스파이어, 02 장박, 01 호텔·기숙사·퇴실·보수중, 06 영선 전담.
+// 03 인스파이어, 02 장박, 01 호텔·기숙사·퇴실·보수중.
+// (06 영선반은 R&R 사용에서 제외 — 상태=영선 전환은 별도 페이지 자동등록으로 처리)
 export const DEFAULT_RNR_RULES: RnrRule[] = [
   { rnr_no: '01', stay_types: ['호텔', '기숙사', '퇴실', '보수중'] },
   { rnr_no: '02', stay_types: ['장박_법인', '장박_개인'] },
   { rnr_no: '03', stay_types: ['인스파이어'] },
   { rnr_no: '04', stay_types: [] },
   { rnr_no: '05', stay_types: [] },
-  { rnr_no: '06', stay_types: [] }, // 영선 전담 (상태=영선 전환 시)
 ]
 
 // 숙박형태 기반 배분.
@@ -35,11 +35,6 @@ export const assignRnrByStayType = (
   const hit = rules.find((rule) => rule.stay_types.includes(stayType))
   return hit?.rnr_no ?? null
 }
-
-// 상태="영선" 으로 전환 시 영선 전담 번호(06) 반환.
-export const RNR_MAINTENANCE_NO: RnrStaffNo = '06'
-
-export const assignRnrForMaintenance = (): RnrStaffNo => RNR_MAINTENANCE_NO
 
 // DB 의 rnr_mapping 행을 메모리 규칙 형태로 변환. (Supabase 조회 결과용)
 export const toRnrRules = (

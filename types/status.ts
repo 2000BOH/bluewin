@@ -89,5 +89,5 @@ export const RNR_STAFF_MAPPING: Record<RnrStaffNo, string> = {
   '03': '김동훈 대리',
   '04': '',            // 미배정 (숨김)
   '05': '강민수 사원',
-  '06': '영선반',
+  '06': '',            // 영선반 R&R 미사용 (숨김)
 }

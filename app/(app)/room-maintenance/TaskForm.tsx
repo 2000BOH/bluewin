@@ -9,6 +9,8 @@ import { createTaskAction, updateTaskAction, type TaskFormState } from './action
 import { COMMON_STATUSES } from '@/types/status'
 import { MAINTENANCE_TYPES, type TaskRow } from '@/lib/queries/room-maintenance-task'
 import { formatCurrency } from '@/lib/utils/format'
+import { useRoomInput } from '@/hooks/useRoomInput'
+import AutoRoomSummary from '@/components/common/AutoRoomSummary'
 
 const INITIAL: TaskFormState = {}
 
@@ -32,6 +34,19 @@ export default function TaskForm({ mode, initial, onSuccess }: Props) {
   const action = mode === 'create' ? createTaskAction : updateTaskAction
   const [state, formAction] = useFormState(action, INITIAL)
 
+  const {
+    phase,
+    roomNo,
+    roomNoRef,
+    handlePhaseChange,
+    handleRoomNoChange,
+    handleRoomCompositionStart,
+    handleRoomCompositionEnd,
+  } = useRoomInput({
+    initialPhase: String(initial?.phase ?? ''),
+    initialRoomNo: initial?.room_no ?? '',
+  })
+
   useEffect(() => {
     if (!state.ok) return
     if (state.maintenanceCreated) {
@@ -49,11 +64,25 @@ export default function TaskForm({ mode, initial, onSuccess }: Props) {
       {mode === 'edit' && initial && <input type="hidden" name="id" value={initial.id} />}
 
       <Field label="차수" required>
-        <TextInput name="phase" type="number" min={1} required defaultValue={initial?.phase ?? ''} />
+        <TextInput name="phase" type="number" min={1} required value={phase} onChange={handlePhaseChange} />
       </Field>
-      <Field label="호수" required>
-        <TextInput name="room_no" required defaultValue={initial?.room_no ?? ''} />
-      </Field>
+      <div className="flex flex-col gap-1.5">
+        <Field label="호수" required>
+          <TextInput
+            ref={roomNoRef}
+            name="room_no"
+            required
+            value={roomNo}
+            onChange={handleRoomNoChange}
+            onCompositionStart={handleRoomCompositionStart}
+            onCompositionEnd={handleRoomCompositionEnd}
+          />
+        </Field>
+      </div>
+
+      <div className="sm:col-span-2 -mt-2 mb-2">
+        <AutoRoomSummary phase={phase} roomNo={roomNo} />
+      </div>
       <Field label="정비유형" required>
         <Select name="maintenance_type" defaultValue={initial?.maintenance_type ?? '청소'} required>
           {MAINTENANCE_TYPES.map((t) => (

@@ -202,29 +202,30 @@ export default function RoomStatusPanel({
                   <span
                     className={`mt-1.5 flex-shrink-0 w-2 h-2 rounded-full ${URGENCY_DOT[item.urgency] ?? 'bg-gray-300'}`}
                   />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="font-medium text-sm">{item.title}</span>
-                      <span
-                        className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium ${STATUS_COLOR[item.status] ?? 'bg-gray-100 text-gray-600'}`}
-                      >
-                        {item.status}
-                      </span>
-                      {item.urgency === '긴급' && (
-                        <span className="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-600 text-white">
-                          긴급
+                  <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-medium text-sm">{item.title}</span>
+                        <span
+                          className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium ${STATUS_COLOR[item.status] ?? 'bg-gray-100 text-gray-600'}`}
+                        >
+                          {item.status}
                         </span>
+                        {item.urgency === '긴급' && (
+                          <span className="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-600 text-white">
+                            긴급
+                          </span>
+                        )}
+                      </div>
+                      {item.content && (
+                        <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1 sm:line-clamp-2">
+                          {item.content}
+                        </p>
                       )}
                     </div>
-                    {item.content && (
-                      <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
-                        {item.content}
-                      </p>
-                    )}
-                    <div className="mt-1 flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
+                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap sm:justify-end shrink-0">
                       <span>접수 {fmtShort(item.created_at)}</span>
-                      {item.requester && <span>· 접수자: {item.requester}</span>}
-                      {item.rnr_name && <span>· 담당: {item.rnr_name}</span>}
+                      {item.requester && <span>· {item.requester}</span>}
                       {item.stay_type && <span>· {item.stay_type.replace('_', ' ')}</span>}
                     </div>
                   </div>
@@ -245,24 +246,25 @@ export default function RoomStatusPanel({
               <li key={item.id} className="py-2.5 px-1">
                 <div className="flex items-start gap-2">
                   <span className="mt-1.5 flex-shrink-0 w-2 h-2 rounded-full bg-green-400" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="font-medium text-sm">{item.title}</span>
-                      <span className="inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-100 text-green-700">
-                        완료
-                      </span>
+                  <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-medium text-sm">{item.title}</span>
+                        <span className="inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-100 text-green-700">
+                          완료
+                        </span>
+                      </div>
+                      {item.content && (
+                        <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">{item.content}</p>
+                      )}
+                      {item.action_content && (
+                        <p className="mt-0.5 text-xs text-foreground/80 line-clamp-1">
+                          → {item.action_content}
+                        </p>
+                      )}
                     </div>
-                    {item.content && (
-                      <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">{item.content}</p>
-                    )}
-                    {item.action_content && (
-                      <p className="mt-0.5 text-xs text-foreground/80 line-clamp-2">
-                        → {item.action_content}
-                      </p>
-                    )}
-                    <div className="mt-1 flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap">
-                      <span>접수 {fmtShort(item.created_at)}</span>
-                      {item.completed_at && <span>· 완료 {fmtShort(item.completed_at)}</span>}
+                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground flex-wrap sm:justify-end shrink-0">
+                      {item.completed_at && <span>완료 {fmtShort(item.completed_at)}</span>}
                       {item.requester && <span>· {item.requester}</span>}
                       {item.rnr_name && <span>· 담당: {item.rnr_name}</span>}
                     </div>
@@ -303,23 +305,21 @@ export default function RoomStatusPanel({
                     </div>
 
                     {group.action === 'update' && (
-                      <div className="space-y-1 bg-muted/30 px-2.5 py-2 rounded-md border border-muted/50">
+                      <div className="flex flex-wrap gap-x-4 gap-y-1.5 bg-muted/30 px-3 py-2.5 rounded-md border border-muted/50">
                         {group.changes.map((change) => (
-                          <div key={change.id} className="flex items-center gap-1.5 flex-wrap text-xs">
+                          <div key={change.id} className="flex items-center gap-1.5 text-xs">
                             {change.field_name_ko && (
-                              <span className="font-medium text-muted-foreground min-w-[70px] shrink-0">{change.field_name_ko}</span>
+                              <span className="font-medium text-muted-foreground">{change.field_name_ko}</span>
                             )}
-                            {change.old_value && (
-                              <span className="line-through text-muted-foreground/70">
-                                {change.old_value}
-                              </span>
-                            )}
-                            {change.old_value && change.new_value && <span className="text-muted-foreground/70">→</span>}
-                            {change.new_value && (
-                              <span className="font-medium text-foreground">
-                                {change.new_value}
-                              </span>
-                            )}
+                            <div className="flex items-center gap-1.5 bg-background border px-2 py-0.5 rounded text-muted-foreground/80">
+                              {change.old_value && (
+                                <span className="line-through">{change.old_value}</span>
+                              )}
+                              {change.old_value && change.new_value && <span>→</span>}
+                              {change.new_value && (
+                                <span className="font-medium text-foreground">{change.new_value}</span>
+                              )}
+                            </div>
                           </div>
                         ))}
                       </div>

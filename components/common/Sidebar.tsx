@@ -34,10 +34,10 @@ const MENU_GROUPS: MenuGroup[] = [
       { label: '객실마스터', href: '/room-master' },
       { label: '소유주 관리', href: '/buyers' },
       { label: '계약관리', href: '/contracts' },
-      { label: '분양관리 요약', href: '/summary/sales' },
-      { label: '운영숙박 요약', href: '/summary/operation' },
+      { label: '분양 요약', href: '/summary/sales' },
+      { label: '숙박 요약', href: '/summary/operation' },
       { label: '만료 객실수', href: '/summary/expiry' },
-      { label: '객실현황 정보', href: '/room-status' },
+      { label: '객실정보', href: '/room-status' },
     ],
   },
   {
@@ -48,7 +48,10 @@ const MENU_GROUPS: MenuGroup[] = [
   },
   {
     title: '공통',
-    items: [{ label: '수정이력', href: '/history' }],
+    items: [
+      { label: '히스토리', href: '/history/snapshot' },
+      { label: '수정이력', href: '/history' },
+    ],
   },
 ]
 
@@ -147,7 +150,8 @@ function NavLink({
   const isActive =
     pathname === href ||
     (pathname.startsWith(`${href}/`) &&
-      !(href === '/maintenance' && pathname.startsWith('/maintenance/inbox')))
+      !(href === '/maintenance' && pathname.startsWith('/maintenance/inbox')) &&
+      !(href === '/history' && pathname.startsWith('/history/snapshot')))
 
   return (
     <Link

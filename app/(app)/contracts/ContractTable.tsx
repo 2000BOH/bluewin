@@ -17,6 +17,7 @@ import { formatDate } from '@/lib/utils/format'
 import type { ContractListItem } from '@/lib/queries/contracts'
 import InlineContractEditor from './InlineContractEditor'
 import { ChevronDown, ChevronRight, Plus, RefreshCw, Search } from 'lucide-react'
+import { useRoomInput } from '@/hooks/useRoomInput'
 
 type BuyerOption = { id: string; name1: string; buyer_no: string }
 type Props = { rows: ContractListItem[]; buyerOptions: BuyerOption[] }
@@ -29,23 +30,37 @@ export default function ContractTable({ rows, buyerOptions }: Props) {
   const params = useSearchParams()
   const [, startTransition] = useTransition()
 
-  const [phase, setPhase] = useState(params.get('phase') ?? '')
-  const [roomNo, setRoomNo] = useState(params.get('room_no') ?? '')
-  const [opType, setOpType] = useState(params.get('operation_type') ?? '')
-  const [accType, setAccType] = useState(params.get('accommodation_type') ?? '')
+  const [accType, setAccType] = useState<string>(params.get('accommodation_type') ?? '')
+  const [opType, setOpType] = useState<string>(params.get('operation_type') ?? '')
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
 
-  const apply = () => {
+  const applyFetch = (p: string, r: string) => {
     const sp = new URLSearchParams()
-    if (phase) sp.set('phase', phase)
-    if (roomNo) sp.set('room_no', roomNo)
+    if (p) sp.set('phase', p)
+    if (r) sp.set('room_no', r)
     if (opType) sp.set('operation_type', opType)
     if (accType) sp.set('accommodation_type', accType)
     startTransition(() => router.push(`/contracts?${sp.toString()}`))
   }
+
+  const {
+    phase,
+    roomNo,
+    roomNoRef,
+    handlePhaseChange,
+    handleRoomNoChange,
+    handleRoomCompositionStart,
+    handleRoomCompositionEnd,
+  } = useRoomInput({
+    initialPhase: params.get('phase') ?? '',
+    initialRoomNo: params.get('room_no') ?? '',
+    onAutoFetch: applyFetch,
+  })
+
+  const apply = () => applyFetch(phase, roomNo)
   const reset = () => {
-    setPhase(''); setRoomNo(''); setOpType(''); setAccType('')
-    startTransition(() => router.push('/contracts'))
+    setOpType(''); setAccType('')
+    applyFetch('', '')
   }
   const toggleExpand = (id: string) =>
     setExpanded((p) => ({ ...p, [id]: !p[id] }))
@@ -58,10 +73,10 @@ export default function ContractTable({ rows, buyerOptions }: Props) {
         {/* 한 행: 필터 4개 + 버튼 (모든 항목을 동일한 행에 배치) */}
         <div className="flex flex-wrap items-end gap-2">
           <Field label="차수" className="min-w-[110px] flex-1">
-            <TextInput type="number" min={1} value={phase} placeholder="전체" onChange={(e) => setPhase(e.target.value)} />
+            <TextInput type="number" min={1} value={phase} placeholder="전체" onChange={handlePhaseChange} />
           </Field>
           <Field label="호수" className="min-w-[110px] flex-1">
-            <TextInput value={roomNo} placeholder="전체" onChange={(e) => setRoomNo(e.target.value)} />
+            <TextInput ref={roomNoRef} value={roomNo} placeholder="전체" onChange={handleRoomNoChange} onCompositionStart={handleRoomCompositionStart} onCompositionEnd={handleRoomCompositionEnd} />
           </Field>
           <Field label="숙박형태" className="min-w-[140px] flex-1">
             <Select value={accType} onChange={(e) => setAccType(e.target.value)}>

@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Field, TextInput } from '@/components/common/FormField'
 import { createRoomAction, updateRoomAction, type RoomFormState } from './actions'
 import type { RoomRow } from '@/lib/queries/rooms'
+import { useRoomInput } from '@/hooks/useRoomInput'
+import AutoRoomSummary from '@/components/common/AutoRoomSummary'
 
 const INITIAL: RoomFormState = {}
 
@@ -28,6 +30,19 @@ export default function RoomForm({ mode, initial, onSuccess }: Props) {
   const action = mode === 'create' ? createRoomAction : updateRoomAction
   const [state, formAction] = useFormState(action, INITIAL)
 
+  const {
+    phase,
+    roomNo,
+    roomNoRef,
+    handlePhaseChange,
+    handleRoomNoChange,
+    handleRoomCompositionStart,
+    handleRoomCompositionEnd,
+  } = useRoomInput({
+    initialPhase: String(initial?.phase ?? ''),
+    initialRoomNo: initial?.room_no ?? '',
+  })
+
   useEffect(() => {
     if (state.ok) onSuccess()
   }, [state, onSuccess])
@@ -37,11 +52,25 @@ export default function RoomForm({ mode, initial, onSuccess }: Props) {
       {mode === 'edit' && initial && <input type="hidden" name="id" value={initial.id} />}
 
       <Field label="차수" required>
-        <TextInput name="phase" type="number" min={1} required defaultValue={initial?.phase ?? ''} />
+        <TextInput name="phase" type="number" min={1} required value={phase} onChange={handlePhaseChange} />
       </Field>
-      <Field label="호수" required>
-        <TextInput name="room_no" required defaultValue={initial?.room_no ?? ''} />
-      </Field>
+      <div className="flex flex-col gap-1.5">
+        <Field label="호수" required>
+          <TextInput
+            ref={roomNoRef}
+            name="room_no"
+            required
+            value={roomNo}
+            onChange={handleRoomNoChange}
+            onCompositionStart={handleRoomCompositionStart}
+            onCompositionEnd={handleRoomCompositionEnd}
+          />
+        </Field>
+      </div>
+
+      <div className="col-span-full -mt-2 mb-2">
+        <AutoRoomSummary phase={phase} roomNo={roomNo} />
+      </div>
       <Field label="타입">
         <TextInput name="type" defaultValue={initial?.type ?? ''} />
       </Field>

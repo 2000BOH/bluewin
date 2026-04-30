@@ -123,3 +123,46 @@ export async function deleteTransferAction(form: FormData): Promise<void> {
   await deleteTransfer(supabase, id)
   revalidatePath('/room-transfer')
 }
+
+// 목록에서 상태 배지를 클릭해 인라인으로 상태만 변경.
+// '영선' 으로 전환 시 영선 페이지 자동 등록(ensureMaintenanceFromSource).
+export async function updateTransferStatusAction(
+  id: string,
+  status: CommonStatus,
+): Promise<{ ok: true } | { error: string }> {
+  try {
+    const user = await getCurrentAppUser()
+    if (!user) return { error: '로그인이 필요합니다.' }
+    if (!id) return { error: 'id 누락' }
+    const supabase = createServerSupabase()
+
+    const payload: TransferUpdate = { status, updater: user.id }
+    await updateTransfer(supabase, id, payload)
+
+    if (isMaintenanceTriggerStatus(status)) {
+      const { data: row, error: fetchErr } = await supabase
+        .from('room_transfers')
+        .select('from_phase, from_room_no, to_phase, to_room_no, tenant_name, reason')
+        .eq('id', id)
+        .single()
+      if (!fetchErr && row) {
+        const summary = `${row.from_phase}차 ${row.from_room_no} → ${row.to_phase}차 ${row.to_room_no}`
+        await ensureMaintenanceFromSource(supabase, {
+          phase: row.to_phase,
+          room_no: row.to_room_no,
+          source: 'room-transfer',
+          source_id: id,
+          requester: row.tenant_name ?? '시스템',
+          summary,
+          detail: row.reason ?? summary,
+          creator: user.id,
+        })
+        revalidatePath('/maintenance')
+      }
+    }
+    revalidatePath('/room-transfer')
+    return { ok: true }
+  } catch (e) {
+    return { error: (e as Error).message }
+  }
+}

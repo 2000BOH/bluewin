@@ -219,9 +219,17 @@ export type Database = {
           rnr_no: RnrStaffNoEnum | null
           completed_at: string | null
           completed_by: string | null
+          photos: Json
         } & Authoring & Timestamps
-        Insert: Omit<Database['public']['Tables']['maintenance_requests']['Row'], 'id' | 'created_at' | 'updated_at'> &
-          Partial<Pick<Database['public']['Tables']['maintenance_requests']['Row'], 'id' | 'created_at' | 'updated_at'>>
+        Insert: Omit<
+          Database['public']['Tables']['maintenance_requests']['Row'],
+          'id' | 'created_at' | 'updated_at' | 'photos'
+        > & Partial<
+          Pick<
+            Database['public']['Tables']['maintenance_requests']['Row'],
+            'id' | 'created_at' | 'updated_at' | 'photos'
+          >
+        >
         Update: Partial<Database['public']['Tables']['maintenance_requests']['Insert']>
         Relationships: []
       }
@@ -260,9 +268,26 @@ export type Database = {
           photos: Json
           next_check_date: string | null
           status: CommonStatus
+          checklist_detail: Json
+          ok_count: number
+          need_count: number
+          move_in_notes: string | null
+          contract_notes: string | null
+          move_out_notes: string | null
         } & Authoring & Timestamps
-        Insert: Omit<Database['public']['Tables']['room_checks']['Row'], 'id' | 'created_at' | 'updated_at'> &
-          Partial<Pick<Database['public']['Tables']['room_checks']['Row'], 'id' | 'created_at' | 'updated_at'>>
+        Insert: Omit<
+          Database['public']['Tables']['room_checks']['Row'],
+          'id' | 'created_at' | 'updated_at' |
+          'checklist_detail' | 'ok_count' | 'need_count' |
+          'move_in_notes' | 'contract_notes' | 'move_out_notes'
+        > & Partial<
+          Pick<
+            Database['public']['Tables']['room_checks']['Row'],
+            'id' | 'created_at' | 'updated_at' |
+            'checklist_detail' | 'ok_count' | 'need_count' |
+            'move_in_notes' | 'contract_notes' | 'move_out_notes'
+          >
+        >
         Update: Partial<Database['public']['Tables']['room_checks']['Insert']>
         Relationships: []
       }

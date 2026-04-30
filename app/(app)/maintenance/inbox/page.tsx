@@ -1,22 +1,13 @@
 // 접수현황 (/maintenance/inbox)
 // 완료구분·날짜범위·접수자·처리상태 필터 지원.
 
-import Link from 'next/link'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { listMaintenance } from '@/lib/queries/maintenance'
 import PageHeader from '@/components/common/PageHeader'
-import StatusBadge from '@/components/common/StatusBadge'
-import StayTypeBadge from '@/components/common/StayTypeBadge'
 import EmptyState from '@/components/common/EmptyState'
-import { formatDateTime } from '@/lib/utils/format'
-import {
-  SOURCE_LABELS,
-  RNR_STAFF_MAPPING,
-  type MaintenanceSource,
-  type RnrStaffNo,
-} from '@/types/status'
 import type { CommonStatus } from '@/types/supabase'
 import InboxFilterBar from './InboxFilterBar'
+import InboxTable from './InboxTable'
 
 export const dynamic = 'force-dynamic'
 
@@ -77,61 +68,7 @@ export default async function MaintenanceInboxPage({
           description="필터를 변경하거나 전체 버튼을 눌러 전체 목록을 확인하세요."
         />
       ) : (
-        <div className="data-table-wrap">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/30 text-left">
-              <tr>
-                <th className="px-3 py-2 whitespace-nowrap">No</th>
-                <th className="px-3 py-2 whitespace-nowrap">차수</th>
-                <th className="px-3 py-2 whitespace-nowrap">호수</th>
-                <th className="px-3 py-2 whitespace-nowrap">출처</th>
-                <th className="px-3 py-2 whitespace-nowrap">민원 제목</th>
-                <th className="px-3 py-2 whitespace-nowrap">숙박형태</th>
-                <th className="px-3 py-2 whitespace-nowrap">R&R</th>
-                <th className="px-3 py-2 whitespace-nowrap">접수자</th>
-                <th className="px-3 py-2 whitespace-nowrap">접수일시</th>
-                <th className="px-3 py-2 whitespace-nowrap">상태</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row, idx) => (
-                <tr key={row.id} className="border-t hover:bg-muted/30">
-                  <td className="px-3 py-2 text-muted-foreground">{idx + 1}</td>
-                  <td className="px-3 py-2">{row.phase}차</td>
-                  <td className="px-3 py-2 font-medium">{row.room_no}</td>
-                  <td className="px-3 py-2 text-muted-foreground text-xs">
-                    {SOURCE_LABELS[row.source as MaintenanceSource] ?? row.source ?? '-'}
-                  </td>
-                  <td className="px-3 py-2 max-w-[180px] truncate" title={row.title ?? ''}>
-                    {row.title ?? '-'}
-                  </td>
-                  <td className="px-3 py-2">
-                    <StayTypeBadge stayType={row.stay_type} size="sm" />
-                  </td>
-                  <td className="px-3 py-2">
-                    {row.rnr_no ? (
-                      <Link
-                        href={`/rnr/${row.rnr_no}`}
-                        className="font-medium text-primary underline-offset-2 hover:underline"
-                      >
-                        {RNR_STAFF_MAPPING[row.rnr_no as RnrStaffNo] ?? row.rnr_no}
-                      </Link>
-                    ) : (
-                      <span className="text-muted-foreground">미배분</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2">{row.requester ?? '-'}</td>
-                  <td className="px-3 py-2 whitespace-nowrap text-xs">
-                    {formatDateTime(row.created_at)}
-                  </td>
-                  <td className="px-3 py-2">
-                    <StatusBadge status={row.status} size="sm" />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <InboxTable rows={rows} />
       )}
     </div>
   )

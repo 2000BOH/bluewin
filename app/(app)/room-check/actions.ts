@@ -147,3 +147,90 @@ export async function deleteCheckAction(form: FormData): Promise<void> {
   await deleteCheck(supabase, id)
   revalidatePath('/room-check')
 }
+
+// 목록에서 상태 배지를 클릭해 인라인으로 상태만 변경.
+// '영선' 으로 전환 시 영선 페이지 자동 등록.
+export async function updateCheckStatusAction(
+  id: string,
+  status: CommonStatus,
+): Promise<{ ok: true } | { error: string }> {
+  try {
+    const user = await getCurrentAppUser()
+    if (!user) return { error: '로그인이 필요합니다.' }
+    if (!id) return { error: 'id 누락' }
+    const supabase = createServerSupabase()
+
+    const payload: CheckUpdate = { status, updater: user.id }
+    await updateCheck(supabase, id, payload)
+
+    if (isMaintenanceTriggerStatus(status)) {
+      const { data: row, error: fetchErr } = await supabase
+        .from('room_checks')
+        .select('phase, room_no, checker, overall_status, special_notes')
+        .eq('id', id)
+        .single()
+      if (!fetchErr && row) {
+        const summary = `${row.phase}차 ${row.room_no} 체크 결과: ${row.overall_status}`
+        await ensureMaintenanceFromSource(supabase, {
+          phase: row.phase,
+          room_no: row.room_no,
+          source: 'room-check',
+          source_id: id,
+          requester: row.checker ?? '점검자',
+          summary,
+          detail: row.special_notes ?? summary,
+          creator: user.id,
+        })
+        revalidatePath('/maintenance')
+      }
+    }
+    revalidatePath('/room-check')
+    return { ok: true }
+  } catch (e) {
+    return { error: (e as Error).message }
+  }
+}
+
+// 객실체크 상세 체크리스트 저장. CheckTable 의 [상세] 모달에서 호출.
+export type CheckDetailPayload = {
+  id: string
+  checklistJson: string
+  okCount: number
+  needCount: number
+  moveInNotes: string | null
+  contractNotes: string | null
+  moveOutNotes: string | null
+}
+
+export async function saveCheckDetailAction(
+  payload: CheckDetailPayload,
+): Promise<{ ok: true } | { error: string }> {
+  try {
+    const user = await getCurrentAppUser()
+    if (!user) return { error: '로그인이 필요합니다.' }
+    if (!payload.id) return { error: 'id 누락' }
+
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(payload.checklistJson)
+    } catch {
+      return { error: '체크리스트 데이터 형식이 올바르지 않습니다.' }
+    }
+    if (!Array.isArray(parsed)) return { error: '체크리스트는 배열이어야 합니다.' }
+
+    const supabase = createServerSupabase()
+    await updateCheck(supabase, payload.id, {
+      checklist_detail: parsed as unknown as CheckUpdate['checklist_detail'],
+      ok_count: payload.okCount,
+      need_count: payload.needCount,
+      move_in_notes: payload.moveInNotes,
+      contract_notes: payload.contractNotes,
+      move_out_notes: payload.moveOutNotes,
+      updater: user.id,
+    })
+    revalidatePath('/room-check')
+    return { ok: true }
+  } catch (e) {
+    return { error: (e as Error).message }
+  }
+}

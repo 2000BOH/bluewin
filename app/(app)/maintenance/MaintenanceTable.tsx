@@ -7,13 +7,20 @@ import { useMemo, useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import RoomFilterBar from '@/components/common/RoomFilterBar'
-import StatusBadge from '@/components/common/StatusBadge'
+import InlineStatusSelect from '@/components/common/InlineStatusSelect'
 import Modal from '@/components/common/Modal'
 import EmptyState from '@/components/common/EmptyState'
+import RowActionCell from '@/components/common/RowActionCell'
+import PhotoStrip from '@/components/common/PhotoStrip'
 import MaintenanceForm from './MaintenanceForm'
-import { deleteMaintenanceAction } from './actions'
+import { deleteMaintenanceAction, updateMaintenanceStatusAction } from './actions'
 import { formatDate, formatDateTime } from '@/lib/utils/format'
 import type { MaintenanceRow } from '@/lib/queries/maintenance'
+import {
+  rowFlagClass,
+  sortByFlag,
+  useRowFlags,
+} from '@/lib/hooks/useRowFlags'
 import { Pencil, Plus, Trash2 } from 'lucide-react'
 
 type Props = { rows: MaintenanceRow[] }
@@ -64,6 +71,13 @@ export default function MaintenanceTable({ rows }: Props) {
     })
   }
 
+  const { flagsOf, togglePriority, toggleDone, prioritySnapshot } =
+    useRowFlags('maintenance')
+  const sortedRows = useMemo(
+    () => sortByFlag(rows, prioritySnapshot),
+    [rows, prioritySnapshot],
+  )
+
   const total = rows.length
   const completed = useMemo(() => rows.filter((r) => r.status === '완료').length, [rows])
 
@@ -97,8 +111,15 @@ export default function MaintenanceTable({ rows }: Props) {
             <EmptyState description="조건에 맞는 영선 요청이 없습니다." />
           </div>
         ) : (
-          rows.map((r, idx) => (
-            <div key={r.id} className="rounded-lg border bg-card p-3">
+          sortedRows.map((r, idx) => {
+            const flags = flagsOf(r.id)
+            return (
+            <div
+              key={r.id}
+              className={`rounded-lg border bg-card p-3 ${
+                flags.priority && !flags.done ? 'ring-1 ring-amber-300/70 bg-amber-50' : ''
+              } ${flags.done ? 'opacity-40 bg-muted/60' : ''}`}
+            >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline gap-2">
@@ -113,7 +134,19 @@ export default function MaintenanceTable({ rows }: Props) {
                   </div>
                   <div className="mt-1 text-sm font-medium line-clamp-2">{r.title}</div>
                 </div>
-                <StatusBadge status={r.status} size="sm" />
+                <InlineStatusSelect
+                  status={r.status}
+                  size="sm"
+                  onChange={(next) => updateMaintenanceStatusAction(r.id, next)}
+                />
+              </div>
+              <div className="mt-2">
+                <RowActionCell
+                  priority={flags.priority}
+                  done={flags.done}
+                  onPriority={() => togglePriority(r.id)}
+                  onDone={() => toggleDone(r.id)}
+                />
               </div>
               <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
                 <div>
@@ -157,7 +190,8 @@ export default function MaintenanceTable({ rows }: Props) {
                 </div>
               </div>
             </div>
-          ))
+            )
+          })
         )}
       </div>
 
@@ -167,23 +201,40 @@ export default function MaintenanceTable({ rows }: Props) {
           <thead className="bg-muted/30">
             <tr>
               <th className="px-3 py-2 text-left">No</th>
+              <th className="px-3 py-2 text-left">
+                <span className="inline-flex items-center gap-2">
+                  <span className="w-6 text-center">우선</span>
+                  <span className="text-[11px] text-muted-foreground">완료</span>
+                </span>
+              </th>
               <th className="px-3 py-2 text-left">차수</th>
               <th className="px-3 py-2 text-left">호수</th>
               <th className="px-3 py-2 text-left">제목</th>
               <th className="px-3 py-2 text-left">요청자</th>
               <th className="px-3 py-2 text-left">긴급도</th>
-              <th className="px-3 py-2 text-left">상태</th>
+              <th className="px-3 py-2 !text-center">상태</th>
               <th className="px-3 py-2 text-left">담당자</th>
               <th className="px-3 py-2 text-left">출처</th>
+              <th className="px-3 py-2 text-left">사진</th>
               <th className="px-3 py-2 text-left">접수일</th>
               <th className="px-3 py-2 text-left">완료일</th>
               <th className="px-3 py-2 text-right">액션</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((r, idx) => (
-              <tr key={r.id} className="border-t hover:bg-muted/20">
+            {sortedRows.map((r, idx) => {
+              const flags = flagsOf(r.id)
+              return (
+              <tr key={r.id} className={`border-t ${rowFlagClass(flags)}`}>
                 <td className="px-3 py-2 text-muted-foreground">{idx + 1}</td>
+                <td className="px-3 py-2">
+                  <RowActionCell
+                    priority={flags.priority}
+                    done={flags.done}
+                    onPriority={() => togglePriority(r.id)}
+                    onDone={() => toggleDone(r.id)}
+                  />
+                </td>
                 <td className="px-3 py-2">{r.phase}차</td>
                 <td className="px-3 py-2 font-medium">{r.room_no}</td>
                 <td className="px-3 py-2">{r.title}</td>
@@ -194,11 +245,17 @@ export default function MaintenanceTable({ rows }: Props) {
                     {r.urgency}
                   </span>
                 </td>
-                <td className="px-3 py-2">
-                  <StatusBadge status={r.status} />
+                <td className="px-3 py-2 text-center">
+                  <InlineStatusSelect
+                    status={r.status}
+                    onChange={(next) => updateMaintenanceStatusAction(r.id, next)}
+                  />
                 </td>
                 <td className="px-3 py-2">{r.assigned_to ?? '-'}</td>
                 <td className="px-3 py-2 text-xs text-muted-foreground">{r.source}</td>
+                <td className="px-3 py-2">
+                  <PhotoStrip photos={(r.photos as unknown as string[]) ?? []} />
+                </td>
                 <td className="px-3 py-2 text-xs">{formatDate(r.request_date)}</td>
                 <td className="px-3 py-2 text-xs">{formatDateTime(r.completed_at)}</td>
                 <td className="px-3 py-2">
@@ -222,7 +279,8 @@ export default function MaintenanceTable({ rows }: Props) {
                   </div>
                 </td>
               </tr>
-            ))}
+              )
+            })}
           </tbody>
         </table>
         {rows.length === 0 && (

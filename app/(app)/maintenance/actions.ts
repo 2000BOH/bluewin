@@ -34,6 +34,18 @@ const optional = (v: FormDataEntryValue | null): string | null => {
   return s ? s : null
 }
 
+const parsePhotos = (v: FormDataEntryValue | null): string[] => {
+  const raw = String(v ?? '').trim()
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter((u): u is string => typeof u === 'string' && u.length > 0)
+  } catch {
+    return []
+  }
+}
+
 const buildPayload = (form: FormData) => {
   const phase = parsePhase(form.get('phase'))
   const room_no = required(form.get('room_no'), '호수')
@@ -52,6 +64,7 @@ const buildPayload = (form: FormData) => {
     request_date: optional(form.get('request_date')) ?? todayKst(),
     assigned_to: optional(form.get('assigned_to')),
     action_content: optional(form.get('action_content')),
+    photos: parsePhotos(form.get('photos')),
   }
 }
 
@@ -121,4 +134,30 @@ export async function deleteMaintenanceAction(form: FormData): Promise<void> {
   const supabase = createServerSupabase()
   await deleteMaintenance(supabase, id)
   revalidatePath('/maintenance')
+}
+
+// 목록에서 상태 배지를 클릭해 인라인으로 상태만 변경.
+// maintenance_requests 자체 레코드이므로 자동 연동(영선 페이지 등록) 은 불필요.
+export async function updateMaintenanceStatusAction(
+  id: string,
+  status: CommonStatus,
+): Promise<{ ok: true } | { error: string }> {
+  try {
+    const user = await getCurrentAppUser()
+    if (!user) return { error: '로그인이 필요합니다.' }
+    if (!id) return { error: 'id 누락' }
+    const supabase = createServerSupabase()
+    const payload: MaintenanceUpdate = {
+      status,
+      updater: user.id,
+      completed_at: status === '완료' ? new Date().toISOString() : null,
+      completed_by: status === '완료' ? user.id : null,
+    }
+    await updateMaintenance(supabase, id, payload)
+    revalidatePath('/maintenance')
+    revalidatePath('/maintenance/inbox')
+    return { ok: true }
+  } catch (e) {
+    return { error: (e as Error).message }
+  }
 }

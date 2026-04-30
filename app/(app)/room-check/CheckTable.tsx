@@ -1,17 +1,25 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useMemo, useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import RoomFilterBar from '@/components/common/RoomFilterBar'
-import StatusBadge from '@/components/common/StatusBadge'
+import InlineStatusSelect from '@/components/common/InlineStatusSelect'
 import Modal from '@/components/common/Modal'
 import EmptyState from '@/components/common/EmptyState'
+import RowActionCell from '@/components/common/RowActionCell'
+import PhotoStrip from '@/components/common/PhotoStrip'
 import CheckForm from './CheckForm'
-import { deleteCheckAction } from './actions'
+import CheckDetailModal from './CheckDetailModal'
+import { deleteCheckAction, updateCheckStatusAction } from './actions'
 import { formatDate } from '@/lib/utils/format'
 import type { CheckRow } from '@/lib/queries/room-check'
-import { Pencil, Plus, Trash2 } from 'lucide-react'
+import {
+  rowFlagClass,
+  sortByFlag,
+  useRowFlags,
+} from '@/lib/hooks/useRowFlags'
+import { ClipboardList, Pencil, Plus, Trash2 } from 'lucide-react'
 
 const OVERALL_COLOR: Record<string, string> = {
   정상: 'text-green-600',
@@ -28,6 +36,7 @@ export default function CheckTable({ rows }: Props) {
 
   const [createOpen, setCreateOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<CheckRow | null>(null)
+  const [detailTarget, setDetailTarget] = useState<CheckRow | null>(null)
 
   const [done,      setDone]      = useState(params.get('done') ?? '')
   const [requester, setRequester] = useState(params.get('checker') ?? '')
@@ -58,6 +67,13 @@ export default function CheckTable({ rows }: Props) {
     })
   }
 
+  const { flagsOf, togglePriority, toggleDone, prioritySnapshot } =
+    useRowFlags('room-check')
+  const sortedRows = useMemo(
+    () => sortByFlag(rows, prioritySnapshot),
+    [rows, prioritySnapshot],
+  )
+
   return (
     <div className="space-y-4">
       <RoomFilterBar
@@ -83,21 +99,38 @@ export default function CheckTable({ rows }: Props) {
           <thead className="bg-muted/30">
             <tr>
               <th className="px-3 py-2 text-left">No</th>
+              <th className="px-3 py-2 text-left">
+                <span className="inline-flex items-center gap-2">
+                  <span className="w-6 text-center">우선</span>
+                  <span className="text-[11px] text-muted-foreground">완료</span>
+                </span>
+              </th>
               <th className="px-3 py-2 text-left">차수</th>
               <th className="px-3 py-2 text-left">호수</th>
               <th className="px-3 py-2 text-left">점검일</th>
               <th className="px-3 py-2 text-left">점검자</th>
               <th className="px-3 py-2 text-left">전체상태</th>
               <th className="px-3 py-2 text-left">특이사항</th>
+              <th className="px-3 py-2 text-left">사진</th>
               <th className="px-3 py-2 text-left">다음점검</th>
-              <th className="px-3 py-2 text-left">처리상태</th>
+              <th className="px-3 py-2 !text-center">처리상태</th>
               <th className="px-3 py-2 text-right">액션</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((r, idx) => (
-              <tr key={r.id} className="border-t hover:bg-muted/20">
+            {sortedRows.map((r, idx) => {
+              const flags = flagsOf(r.id)
+              return (
+              <tr key={r.id} className={`border-t ${rowFlagClass(flags)}`}>
                 <td className="px-3 py-2 text-muted-foreground">{idx + 1}</td>
+                <td className="px-3 py-2">
+                  <RowActionCell
+                    priority={flags.priority}
+                    done={flags.done}
+                    onPriority={() => togglePriority(r.id)}
+                    onDone={() => toggleDone(r.id)}
+                  />
+                </td>
                 <td className="px-3 py-2">{r.phase}차</td>
                 <td className="px-3 py-2 font-medium">{r.room_no}</td>
                 <td className="px-3 py-2 text-xs">{formatDate(r.check_date)}</td>
@@ -108,10 +141,26 @@ export default function CheckTable({ rows }: Props) {
                 <td className="px-3 py-2 max-w-xs truncate" title={r.special_notes ?? ''}>
                   {r.special_notes ?? '-'}
                 </td>
+                <td className="px-3 py-2">
+                  <PhotoStrip photos={(r.photos as unknown as string[]) ?? []} />
+                </td>
                 <td className="px-3 py-2 text-xs">{formatDate(r.next_check_date)}</td>
-                <td className="px-3 py-2"><StatusBadge status={r.status} /></td>
+                <td className="px-3 py-2 text-center">
+                  <InlineStatusSelect
+                    status={r.status}
+                    onChange={(next) => updateCheckStatusAction(r.id, next)}
+                  />
+                </td>
                 <td className="px-3 py-2">
                   <div className="flex justify-end gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setDetailTarget(r)}
+                      className="rounded p-1 text-muted-foreground hover:bg-blue-50 hover:text-blue-600"
+                      title="상세 체크리스트"
+                    >
+                      <ClipboardList className="h-4 w-4" />
+                    </button>
                     <button type="button" onClick={() => setEditTarget(r)} className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground" title="수정">
                       <Pencil className="h-4 w-4" />
                     </button>
@@ -121,7 +170,8 @@ export default function CheckTable({ rows }: Props) {
                   </div>
                 </td>
               </tr>
-            ))}
+              )
+            })}
           </tbody>
         </table>
         {rows.length === 0 && <div className="p-6"><EmptyState description="등록된 체크 기록이 없습니다." /></div>}
@@ -135,6 +185,12 @@ export default function CheckTable({ rows }: Props) {
           <CheckForm mode="edit" initial={editTarget} onSuccess={() => { setEditTarget(null); router.refresh() }} />
         )}
       </Modal>
+
+      <CheckDetailModal
+        open={!!detailTarget}
+        onClose={() => setDetailTarget(null)}
+        row={detailTarget}
+      />
     </div>
   )
 }

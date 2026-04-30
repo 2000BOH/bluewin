@@ -133,3 +133,51 @@ export async function deleteTaskAction(form: FormData): Promise<void> {
   await deleteTask(supabase, id)
   revalidatePath('/room-maintenance')
 }
+
+// 목록에서 상태 배지를 클릭해 인라인으로 상태만 변경.
+// '영선' 으로 전환 시 영선 페이지 자동 등록.
+export async function updateTaskStatusAction(
+  id: string,
+  status: CommonStatus,
+): Promise<{ ok: true } | { error: string }> {
+  try {
+    const user = await getCurrentAppUser()
+    if (!user) return { error: '로그인이 필요합니다.' }
+    if (!id) return { error: 'id 누락' }
+    const supabase = createServerSupabase()
+
+    const payload: TaskUpdate = {
+      status,
+      updater: user.id,
+      completed_at: status === '완료' ? new Date().toISOString() : null,
+      completed_by: status === '완료' ? user.id : null,
+    }
+    await updateTask(supabase, id, payload)
+
+    if (isMaintenanceTriggerStatus(status)) {
+      const { data: row, error: fetchErr } = await supabase
+        .from('room_maintenance_tasks')
+        .select('phase, room_no, requester, maintenance_type, content')
+        .eq('id', id)
+        .single()
+      if (!fetchErr && row) {
+        const summary = `${row.phase}차 ${row.room_no} ${row.maintenance_type}`
+        await ensureMaintenanceFromSource(supabase, {
+          phase: row.phase,
+          room_no: row.room_no,
+          source: 'room-maintenance',
+          source_id: id,
+          requester: row.requester ?? '시스템',
+          summary,
+          detail: row.content ?? summary,
+          creator: user.id,
+        })
+        revalidatePath('/maintenance')
+      }
+    }
+    revalidatePath('/room-maintenance')
+    return { ok: true }
+  } catch (e) {
+    return { error: (e as Error).message }
+  }
+}

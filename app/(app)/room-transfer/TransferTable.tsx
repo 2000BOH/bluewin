@@ -1,16 +1,22 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useMemo, useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import RoomFilterBar from '@/components/common/RoomFilterBar'
-import StatusBadge from '@/components/common/StatusBadge'
+import InlineStatusSelect from '@/components/common/InlineStatusSelect'
 import Modal from '@/components/common/Modal'
 import EmptyState from '@/components/common/EmptyState'
+import RowActionCell from '@/components/common/RowActionCell'
 import TransferForm from './TransferForm'
-import { deleteTransferAction } from './actions'
+import { deleteTransferAction, updateTransferStatusAction } from './actions'
 import { formatDate } from '@/lib/utils/format'
 import type { TransferRow } from '@/lib/queries/room-transfer'
+import {
+  rowFlagClass,
+  sortByFlag,
+  useRowFlags,
+} from '@/lib/hooks/useRowFlags'
 import { ArrowRight, Pencil, Plus, Trash2 } from 'lucide-react'
 
 type Props = { rows: TransferRow[] }
@@ -50,6 +56,13 @@ export default function TransferTable({ rows }: Props) {
     })
   }
 
+  const { flagsOf, togglePriority, toggleDone, prioritySnapshot } =
+    useRowFlags('room-transfer')
+  const sortedRows = useMemo(
+    () => sortByFlag(rows, prioritySnapshot),
+    [rows, prioritySnapshot],
+  )
+
   return (
     <div className="space-y-4">
       <RoomFilterBar
@@ -73,19 +86,35 @@ export default function TransferTable({ rows }: Props) {
           <thead className="bg-muted/30">
             <tr>
               <th className="px-3 py-2 text-left">No</th>
+              <th className="px-3 py-2 text-left">
+                <span className="inline-flex items-center gap-2">
+                  <span className="w-6 text-center">우선</span>
+                  <span className="text-[11px] text-muted-foreground">완료</span>
+                </span>
+              </th>
               <th className="px-3 py-2 text-left">차수</th>
               <th className="px-3 py-2 text-left">이동 전 → 이동 후</th>
               <th className="px-3 py-2 text-left">임차인명</th>
               <th className="px-3 py-2 text-left">이동일</th>
               <th className="px-3 py-2 text-left">사유</th>
-              <th className="px-3 py-2 text-left">상태</th>
+              <th className="px-3 py-2 !text-center">상태</th>
               <th className="px-3 py-2 text-right">액션</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((r, idx) => (
-              <tr key={r.id} className="border-t hover:bg-muted/20">
+            {sortedRows.map((r, idx) => {
+              const flags = flagsOf(r.id)
+              return (
+              <tr key={r.id} className={`border-t ${rowFlagClass(flags)}`}>
                 <td className="px-3 py-2 text-muted-foreground">{idx + 1}</td>
+                <td className="px-3 py-2">
+                  <RowActionCell
+                    priority={flags.priority}
+                    done={flags.done}
+                    onPriority={() => togglePriority(r.id)}
+                    onDone={() => toggleDone(r.id)}
+                  />
+                </td>
                 <td className="px-3 py-2">{r.from_phase}차 → {r.to_phase}차</td>
                 <td className="px-3 py-2 font-medium">
                   <span className="inline-flex items-center gap-1.5">
@@ -97,7 +126,12 @@ export default function TransferTable({ rows }: Props) {
                 <td className="px-3 py-2">{r.tenant_name ?? '-'}</td>
                 <td className="px-3 py-2 text-xs">{formatDate(r.transfer_date)}</td>
                 <td className="px-3 py-2 max-w-xs truncate" title={r.reason ?? ''}>{r.reason ?? '-'}</td>
-                <td className="px-3 py-2"><StatusBadge status={r.status} /></td>
+                <td className="px-3 py-2 text-center">
+                  <InlineStatusSelect
+                    status={r.status}
+                    onChange={(next) => updateTransferStatusAction(r.id, next)}
+                  />
+                </td>
                 <td className="px-3 py-2">
                   <div className="flex justify-end gap-1">
                     <button type="button" onClick={() => setEditTarget(r)} className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground" title="수정">
@@ -109,7 +143,8 @@ export default function TransferTable({ rows }: Props) {
                   </div>
                 </td>
               </tr>
-            ))}
+              )
+            })}
           </tbody>
         </table>
         {rows.length === 0 && <div className="p-6"><EmptyState description="객실 이동 기록이 없습니다." /></div>}

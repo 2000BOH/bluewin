@@ -1,12 +1,12 @@
 'use client'
 
-// 객실체크 등록/수정 폼 — maintenance_requests 기반, 기본 처리상태='퇴실'.
+// 입주지원 등록/수정 폼 — 영선 폼과 동일한 구조.
 
 import { useEffect, useRef, useState } from 'react'
 import { useFormState, useFormStatus } from 'react-dom'
 import { Button } from '@/components/ui/button'
 import { Field, Select, TextArea, TextInput } from '@/components/common/FormField'
-import { createCheckAction, updateCheckAction, type CheckFormState } from './actions'
+import { createMoveInAction, updateMoveInAction, type MoveInFormState } from './actions'
 import { COMMON_STATUSES, URGENCY_LEVELS } from '@/types/status'
 import type { MaintenanceRow } from '@/lib/queries/maintenance'
 import { useRoomInput } from '@/hooks/useRoomInput'
@@ -15,7 +15,7 @@ import { compressImage } from '@/lib/utils/image-compress'
 import { uploadMaintenancePhoto, deleteMaintenancePhoto } from '@/lib/storage/maintenance-photos'
 import { Loader2, Upload, X } from 'lucide-react'
 
-const INITIAL: CheckFormState = {}
+const INITIAL: MoveInFormState = {}
 const MAX_PHOTOS = 5
 
 function Submit({ label, disabled }: { label: string; disabled?: boolean }) {
@@ -33,15 +33,15 @@ type Props = {
   onSuccess: () => void
 }
 
-export default function CheckForm({ mode, initial, onSuccess }: Props) {
-  const action = mode === 'create' ? createCheckAction : updateCheckAction
+export default function MoveInForm({ mode, initial, onSuccess }: Props) {
+  const action = mode === 'create' ? createMoveInAction : updateMoveInAction
   const [state, formAction] = useFormState(action, INITIAL)
 
   const initialPhotos = Array.isArray(initial?.photos)
     ? (initial.photos as unknown as string[])
     : []
-  const [photos, setPhotos]           = useState<string[]>(initialPhotos)
-  const [uploading, setUploading]     = useState(false)
+  const [photos, setPhotos]         = useState<string[]>(initialPhotos)
+  const [uploading, setUploading]   = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement | null>(null)
 
@@ -55,8 +55,12 @@ export default function CheckForm({ mode, initial, onSuccess }: Props) {
 
   const handleFiles = async (fileList: FileList | null) => {
     if (!fileList || fileList.length === 0) return
-    if (!phase || !roomNo) { setUploadError('차수와 호수를 먼저 입력해 주세요.'); return }
-    setUploadError(null); setUploading(true)
+    if (!phase || !roomNo) {
+      setUploadError('차수와 호수를 먼저 입력해 주세요.')
+      return
+    }
+    setUploadError(null)
+    setUploading(true)
     try {
       const remaining = MAX_PHOTOS - photos.length
       const newUrls: string[] = []
@@ -90,6 +94,7 @@ export default function CheckForm({ mode, initial, onSuccess }: Props) {
         <TextInput name="phase" type="number" min={1} required
           value={phase} onChange={handlePhaseChange} />
       </Field>
+
       <Field label="호수" required>
         <TextInput ref={roomNoRef} name="room_no" required
           value={roomNo} onChange={handleRoomNoChange}
@@ -104,6 +109,7 @@ export default function CheckForm({ mode, initial, onSuccess }: Props) {
       <Field label="제목" required className="sm:col-span-2">
         <TextInput name="title" required defaultValue={initial?.title ?? ''} />
       </Field>
+
       <Field label="내용" className="sm:col-span-2">
         <TextArea name="content" defaultValue={initial?.content ?? ''} />
       </Field>
@@ -111,6 +117,7 @@ export default function CheckForm({ mode, initial, onSuccess }: Props) {
       <Field label="요청자">
         <TextInput name="requester" defaultValue={initial?.requester ?? ''} />
       </Field>
+
       <Field label="요청일">
         <TextInput name="request_date" type="date" defaultValue={initial?.request_date ?? ''} />
       </Field>
@@ -120,19 +127,22 @@ export default function CheckForm({ mode, initial, onSuccess }: Props) {
           {URGENCY_LEVELS.map((u) => <option key={u} value={u}>{u}</option>)}
         </Select>
       </Field>
-      <Field label="처리상태" required>
-        <Select name="status" defaultValue={initial?.status ?? '퇴실'} required>
+
+      <Field label="상태" required>
+        <Select name="status" defaultValue={initial?.status ?? '입주지원'} required>
           {COMMON_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
         </Select>
       </Field>
 
       <Field label="담당자" className="sm:col-span-2">
-        <TextInput name="assigned_to" defaultValue={initial?.assigned_to ?? ''} />
+        <TextInput name="assigned_to" defaultValue={initial?.assigned_to ?? '유태형 과장'} />
       </Field>
+
       <Field label="처리내용" hint="완료 시 입력" className="sm:col-span-2">
         <TextArea name="action_content" defaultValue={initial?.action_content ?? ''} />
       </Field>
 
+      {/* 사진 첨부 */}
       <fieldset className="sm:col-span-2 rounded-md border p-3">
         <legend className="px-1 text-xs font-medium text-muted-foreground">
           사진 첨부 ({photos.length} / {MAX_PHOTOS})
@@ -155,7 +165,7 @@ export default function CheckForm({ mode, initial, onSuccess }: Props) {
           <input ref={fileRef} type="file" accept="image/*" multiple
             disabled={uploading || photos.length >= MAX_PHOTOS}
             onChange={(e) => handleFiles(e.target.files)}
-            className="hidden" id="check-photo-input" />
+            className="hidden" id="movein-photo-input" />
           <Button type="button" variant="outline" size="sm"
             disabled={uploading || photos.length >= MAX_PHOTOS}
             onClick={() => fileRef.current?.click()}>
@@ -167,7 +177,9 @@ export default function CheckForm({ mode, initial, onSuccess }: Props) {
         {uploadError && <p className="mt-2 text-xs text-destructive">{uploadError}</p>}
       </fieldset>
 
-      {state.error && <p className="sm:col-span-2 text-sm text-destructive">{state.error}</p>}
+      {state.error && (
+        <p className="sm:col-span-2 text-sm text-destructive">{state.error}</p>
+      )}
 
       <div className="sm:col-span-2 flex justify-end gap-2 pt-2">
         <Submit label={mode === 'create' ? '등록' : '저장'} disabled={uploading} />

@@ -10,7 +10,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export type CommonStatus = '접수' | '영선' | '외부업체' | '퇴실' | '청소' | '완료'
+export type CommonStatus = '접수' | '입주지원' | '영선' | '외부업체' | '퇴실' | '청소' | '완료'
 export type UrgencyLevel = '긴급' | '일반' | '낮음'
 export type UserRole = 'admin' | 'staff' | 'viewer'
 export type BuyerType = '개인' | '법인'

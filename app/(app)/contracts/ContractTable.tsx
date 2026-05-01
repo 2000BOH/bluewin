@@ -12,11 +12,13 @@ import { Button } from '@/components/ui/button'
 import { Field, TextInput, Select } from '@/components/common/FormField'
 import { STAY_TYPES, OPERATION_TYPES } from '@/types/status'
 import EmptyState from '@/components/common/EmptyState'
-import StayTypeBadge from '@/components/common/StayTypeBadge'
+import InlineStayTypeSelect from '@/components/common/InlineStayTypeSelect'
 import { formatDate } from '@/lib/utils/format'
 import type { ContractListItem } from '@/lib/queries/contracts'
 import InlineContractEditor from './InlineContractEditor'
+import { updateContractStayTypeAction } from './actions'
 import { ChevronDown, ChevronRight, Plus, RefreshCw, Search } from 'lucide-react'
+import type { StayType } from '@/types/status'
 import { useRoomInput } from '@/hooks/useRoomInput'
 
 type BuyerOption = { id: string; name1: string; buyer_no: string }
@@ -137,7 +139,8 @@ export default function ContractTable({ rows, buyerOptions }: Props) {
                     </div>
                   </Link>
                   <div className="flex items-center gap-1">
-                    <StayTypeBadge stayType={r.accommodation_type} size="sm" />
+                    <InlineStayTypeSelect stayType={r.accommodation_type} size="sm"
+                      onChange={(next) => updateContractStayTypeAction(r.id, next as StayType | null)} />
                     <button
                       type="button"
                       onClick={() => toggleExpand(r.id)}
@@ -218,7 +221,8 @@ export default function ContractTable({ rows, buyerOptions }: Props) {
                       {r.note ?? ''}
                     </td>
                     <td className="px-3 py-2">
-                      <StayTypeBadge stayType={r.accommodation_type} size="sm" />
+                      <InlineStayTypeSelect stayType={r.accommodation_type} size="sm"
+                        onChange={(next) => updateContractStayTypeAction(r.id, next as StayType | null)} />
                     </td>
                     <td className="px-3 py-2">{r.tenant_name ?? '-'}</td>
                     <td className="px-3 py-2">{formatDate(r.lease_end)}</td>

@@ -25,6 +25,7 @@ export const getMaintenanceStatusCounts = async (
 
   const init: StatusCounts = {
     접수: 0,
+    입주지원: 0,
     영선: 0,
     외부업체: 0,
     퇴실: 0,

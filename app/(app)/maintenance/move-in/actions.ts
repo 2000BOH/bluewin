@@ -1,6 +1,6 @@
 'use server'
 
-// 객실체크 서버 액션 — maintenance_requests 를 처리상태='퇴실' 로 관리.
+// 입주지원 서버 액션.
 
 import { revalidatePath } from 'next/cache'
 import { createServerSupabase } from '@/lib/supabase/server'
@@ -15,7 +15,7 @@ import {
 import type { CommonStatus, UrgencyLevel } from '@/types/supabase'
 import { todayKst } from '@/lib/utils/format'
 
-export type CheckFormState = { error?: string; ok?: boolean }
+export type MoveInFormState = { error?: string; ok?: boolean }
 
 const parsePhase = (v: FormDataEntryValue | null): number => {
   const n = Number(v)
@@ -28,7 +28,8 @@ const required = (v: FormDataEntryValue | null, name: string): string => {
   return s
 }
 const optional = (v: FormDataEntryValue | null): string | null => {
-  const s = String(v ?? '').trim(); return s || null
+  const s = String(v ?? '').trim()
+  return s || null
 }
 const parsePhotos = (v: FormDataEntryValue | null): string[] => {
   try {
@@ -41,7 +42,7 @@ const buildPayload = (form: FormData) => ({
   phase:          parsePhase(form.get('phase')),
   room_no:        required(form.get('room_no'), '호수'),
   title:          required(form.get('title'), '제목'),
-  status:         (required(form.get('status'), '처리상태') as CommonStatus),
+  status:         (required(form.get('status'), '상태') as CommonStatus),
   urgency:        ((form.get('urgency') as UrgencyLevel) || '일반'),
   content:        optional(form.get('content')),
   requester:      optional(form.get('requester')),
@@ -52,14 +53,14 @@ const buildPayload = (form: FormData) => ({
 })
 
 const revalidate = () => {
-  revalidatePath('/room-check')
+  revalidatePath('/maintenance/move-in')
   revalidatePath('/maintenance/inbox')
 }
 
-export async function createCheckAction(
-  _prev: CheckFormState,
+export async function createMoveInAction(
+  _prev: MoveInFormState,
   form: FormData,
-): Promise<CheckFormState> {
+): Promise<MoveInFormState> {
   try {
     const user = await getCurrentAppUser()
     if (!user) return { error: '로그인이 필요합니다.' }
@@ -67,13 +68,13 @@ export async function createCheckAction(
     const base = buildPayload(form)
     const payload: MaintenanceInsert = {
       ...base,
-      // 신규 등록 시 처리상태 기본값 '퇴실'
-      status: base.status || '퇴실',
+      // 입주지원 신규 등록 시 상태 고정 + 담당자 자동 배정(01 유태형)
+      status: base.status === '완료' ? '완료' : '입주지원',
+      rnr_no: '01',
       source: '직접입력',
       source_id: null,
       contract_id: null,
       stay_type: null,
-      rnr_no: null,
       completed_at: base.status === '완료' ? new Date().toISOString() : null,
       completed_by: base.status === '완료' ? user.id : null,
       creator: user.id,
@@ -83,14 +84,18 @@ export async function createCheckAction(
     revalidate()
     return { ok: true }
   } catch (e) {
-    return { error: (e as Error).message }
+    const msg = (e as Error).message
+    if (msg.includes('invalid input value for enum')) {
+      return { error: 'DB 마이그레이션이 필요합니다. Supabase SQL 편집기에서: ALTER TYPE public.common_status ADD VALUE IF NOT EXISTS \'입주지원\' AFTER \'접수\';' }
+    }
+    return { error: msg }
   }
 }
 
-export async function updateCheckAction(
-  _prev: CheckFormState,
+export async function updateMoveInAction(
+  _prev: MoveInFormState,
   form: FormData,
-): Promise<CheckFormState> {
+): Promise<MoveInFormState> {
   try {
     const user = await getCurrentAppUser()
     if (!user) return { error: '로그인이 필요합니다.' }
@@ -107,40 +112,18 @@ export async function updateCheckAction(
     revalidate()
     return { ok: true }
   } catch (e) {
-    return { error: (e as Error).message }
+    const msg = (e as Error).message
+    if (msg.includes('invalid input value for enum')) {
+      return { error: 'DB 마이그레이션이 필요합니다. Supabase SQL 편집기에서: ALTER TYPE public.common_status ADD VALUE IF NOT EXISTS \'입주지원\' AFTER \'접수\';' }
+    }
+    return { error: msg }
   }
 }
 
-export async function deleteCheckAction(form: FormData): Promise<void> {
+export async function deleteMoveInAction(form: FormData): Promise<void> {
   const id = String(form.get('id') ?? '').trim()
   if (!id) return
   const supabase = createServerSupabase()
   await deleteMaintenance(supabase, id)
   revalidate()
-}
-
-// 인라인 처리상태 변경
-export async function updateCheckStatusAction(
-  id: string,
-  status: CommonStatus,
-): Promise<{ ok: true } | { error: string }> {
-  try {
-    const user = await getCurrentAppUser()
-    if (!user) return { error: '로그인이 필요합니다.' }
-    if (!id) return { error: 'id 누락' }
-    const supabase = createServerSupabase()
-    await updateMaintenance(supabase, id, {
-      status,
-      updater: user.id,
-      completed_at: status === '완료' ? new Date().toISOString() : null,
-      completed_by: status === '완료' ? user.id : null,
-    })
-    revalidatePath('/room-check')
-    revalidatePath('/maintenance/inbox')
-    revalidatePath('/maintenance')
-    revalidatePath('/room-maintenance')
-    return { ok: true }
-  } catch (e) {
-    return { error: (e as Error).message }
-  }
 }

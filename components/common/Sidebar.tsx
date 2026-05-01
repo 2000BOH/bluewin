@@ -22,6 +22,7 @@ const MENU_GROUPS: MenuGroup[] = [
     title: '객실·영선 관리',
     items: [
       { label: '접수현황', href: '/maintenance/inbox' },
+      { label: '입주지원', href: '/maintenance/move-in' },
       { label: '영선', href: '/maintenance' },
       { label: '객실이동', href: '/room-transfer' },
       { label: '객실체크', href: '/room-check' },
@@ -31,9 +32,9 @@ const MENU_GROUPS: MenuGroup[] = [
   {
     title: '분양관리',
     items: [
+      { label: '계약관리', href: '/contracts' },
       { label: '객실마스터', href: '/room-master' },
       { label: '소유주 관리', href: '/buyers' },
-      { label: '계약관리', href: '/contracts' },
       { label: '분양 요약', href: '/summary/sales' },
       { label: '숙박 요약', href: '/summary/operation' },
       { label: '만료 객실수', href: '/summary/expiry' },
@@ -151,6 +152,7 @@ function NavLink({
     pathname === href ||
     (pathname.startsWith(`${href}/`) &&
       !(href === '/maintenance' && pathname.startsWith('/maintenance/inbox')) &&
+      !(href === '/maintenance' && pathname.startsWith('/maintenance/move-in')) &&
       !(href === '/history' && pathname.startsWith('/history/snapshot')))
 
   return (

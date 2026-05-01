@@ -73,6 +73,34 @@ export const deleteRoom = async (supabase: Sb, id: string): Promise<void> => {
   if (error) throw new Error(error.message)
 }
 
+// 계약 숙박형태(accommodation_type)를 포함한 확장 타입 — 객실마스터 인라인 편집용.
+export type RoomWithContract = RoomRow & {
+  accommodation_type: string | null
+  contract_id: string | null
+}
+
+export const listRoomsWithContracts = async (
+  supabase: Sb,
+  filter: RoomFilter = {},
+): Promise<RoomWithContract[]> => {
+  const rooms = await listRooms(supabase, filter)
+  if (rooms.length === 0) return []
+
+  const { data: cData } = await supabase
+    .from('contracts')
+    .select('id, phase, room_no, accommodation_type')
+
+  const cMap = new Map<string, { id: string; accommodation_type: string | null }>()
+  for (const c of cData ?? []) {
+    cMap.set(`${c.phase}|${c.room_no}`, { id: c.id, accommodation_type: c.accommodation_type })
+  }
+
+  return rooms.map((r) => {
+    const c = cMap.get(`${r.phase}|${r.room_no}`)
+    return { ...r, accommodation_type: c?.accommodation_type ?? null, contract_id: c?.id ?? null }
+  })
+}
+
 // 분양율, 분양면적 합계 등 Summary 에서도 재사용.
 export const sumRoomTotals = (rows: RoomRow[]) => {
   const init = {

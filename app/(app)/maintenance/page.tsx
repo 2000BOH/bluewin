@@ -20,9 +20,9 @@ const buildFilter = (params: SearchParams): MaintenanceFilter => {
   const done       = pickStr(params.done)         // 'done' | 'undone' | null
   const statusParam = pickStr(params.status) as CommonStatus | null
 
-  // 처리상태 명시 선택이 완료구분보다 우선
+  // 처리상태 명시 선택 > 완료구분 > 기본값 '영선'
   const status: CommonStatus | null =
-    statusParam ?? (done === 'done' ? '완료' : null)
+    statusParam ?? (done === 'done' ? '완료' : '영선')
   const statusNot: CommonStatus | null =
     !statusParam && done === 'undone' ? '완료' : null
 

@@ -19,7 +19,7 @@ const COMPLAINT_CATEGORIES = [
 ] as const
 
 const ACCEPTORS = ['태형', '아름', '동훈', '민수', '남식', '수용', '기타'] as const
-const COMPLAINT_STATUSES = ['접수', '처리중', '영선이관', '외부업체', '완료'] as const
+const COMPLAINT_STATUSES = ['접수', '입주지원', '영선', '외부업체', '퇴실', '청소', '완료'] as const
 
 const INITIAL: ComplaintFormState = {}
 

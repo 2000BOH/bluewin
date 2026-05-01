@@ -14,20 +14,22 @@ import RoomForm from './RoomForm'
 import InlineRoomEditor from './InlineRoomEditor'
 import { deleteRoomAction } from './actions'
 import { formatCurrency } from '@/lib/utils/format'
-import { sumRoomTotals, type RoomRow } from '@/lib/queries/rooms'
-import { STAY_TYPES, OPERATION_TYPES } from '@/types/status'
+import { sumRoomTotals, type RoomWithContract } from '@/lib/queries/rooms'
+import { STAY_TYPES, OPERATION_TYPES, type StayType } from '@/types/status'
+import InlineStayTypeSelect from '@/components/common/InlineStayTypeSelect'
+import { updateContractStayTypeAction } from '@/app/(app)/contracts/actions'
 import { ChevronDown, ChevronRight, Plus, RefreshCw, Search, Trash2 } from 'lucide-react'
 import { useRoomInput } from '@/hooks/useRoomInput'
 
-type Props = { rows: RoomRow[]; canEdit: boolean }
+type Props = { rows: RoomWithContract[]; canEdit: boolean }
 
 const fmtNum = (v: number | null | undefined, digits = 2): string => {
   if (v === null || v === undefined) return ''
   return v.toLocaleString('ko-KR', { maximumFractionDigits: digits })
 }
 
-// 기본 표시 컬럼 수 (No, 차수, 호수, 타입, 조망, 분양면적, VAT포함). 펼침 chevron 컬럼은 별도.
-const BASE_COL_COUNT = 7
+// 기본 표시 컬럼 수 (No, 차수, 호수, 타입, 조망, 숙박형태, 분양면적, VAT포함). 펼침 chevron 컬럼은 별도.
+const BASE_COL_COUNT = 8
 
 export default function RoomTable({ rows, canEdit }: Props) {
   const router = useRouter()
@@ -132,6 +134,7 @@ export default function RoomTable({ rows, canEdit }: Props) {
               <th className="px-3 py-2 text-left">호수</th>
               <th className="px-3 py-2 text-left">타입</th>
               <th className="px-3 py-2 text-left">조망</th>
+              <th className="px-3 py-2 text-left">숙박형태</th>
               <th className="px-3 py-2 text-right">분양면적</th>
               <th className="px-3 py-2 text-right">VAT 포함</th>
               {canEdit && <th className="px-3 py-2 text-right">삭제</th>}
@@ -159,6 +162,14 @@ export default function RoomTable({ rows, canEdit }: Props) {
                     <td className="px-3 py-2 font-medium">{r.room_no}</td>
                     <td className="px-3 py-2">{r.type ?? '-'}</td>
                     <td className="px-3 py-2">{r.view_type ?? '-'}</td>
+                    <td className="px-3 py-2">
+                      {r.contract_id ? (
+                        <InlineStayTypeSelect stayType={r.accommodation_type} size="sm"
+                          onChange={(next) => updateContractStayTypeAction(r.contract_id!, next as StayType | null)} />
+                      ) : (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      )}
+                    </td>
                     <td className="px-3 py-2 text-right font-mono">{fmtNum(r.sale_area)}</td>
                     <td className="px-3 py-2 text-right font-mono">{formatCurrency(r.sale_price_incl_vat)}</td>
                     {canEdit && (
@@ -200,7 +211,7 @@ export default function RoomTable({ rows, canEdit }: Props) {
             <tfoot className="bg-muted/30 text-xs">
               <tr className="border-t-2">
                 <td />
-                <td colSpan={5} className="px-3 py-2 font-semibold">Total</td>
+                <td colSpan={6} className="px-3 py-2 font-semibold">Total</td>
                 <td className="px-3 py-2 text-right font-mono">{fmtNum(totals.sale_area)}</td>
                 <td className="px-3 py-2 text-right font-mono">{formatCurrency(totals.sale_price_incl_vat)}</td>
                 {canEdit && <td />}
@@ -219,7 +230,7 @@ export default function RoomTable({ rows, canEdit }: Props) {
 }
 
 // 권한 없는 사용자(일반직원)가 펼쳤을 때의 read-only 상세 뷰.
-function ReadOnlyRoomDetail({ row }: { row: RoomRow }) {
+function ReadOnlyRoomDetail({ row }: { row: RoomWithContract }) {
   const items: Array<[string, string]> = [
     ['대지', fmtNum(row.land_area)],
     ['전유', fmtNum(row.exclusive_area)],

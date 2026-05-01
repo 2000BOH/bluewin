@@ -16,6 +16,9 @@ const pickStr = (v: string | string[] | undefined): string | null => {
   return v ?? null
 }
 
+// 객실이동에서 다른 페이지로 이동된 상태 — 기본 목록에서 제외.
+const FORWARDED_STATUSES: CommonStatus[] = ['영선', '청소', '퇴실']
+
 const buildFilter = (params: SearchParams): TransferFilter => {
   const done        = pickStr(params.done)
   const statusParam = pickStr(params.status) as CommonStatus | null
@@ -27,6 +30,7 @@ const buildFilter = (params: SearchParams): TransferFilter => {
   return {
     status,
     statusNot,
+    statusNotIn: statusParam ? [] : FORWARDED_STATUSES,
     tenantName: pickStr(params.tenant_name),
     from: pickStr(params.from),
     to:   pickStr(params.to),

@@ -140,6 +140,44 @@ export async function inlineUpdateContractAction(
   }
 }
 
+// 숙박형태 인라인 변경 — contracts.accommodation_type 업데이트 + maintenance_requests.stay_type 동기화.
+export async function updateContractStayTypeAction(
+  contractId: string,
+  stayType: string | null,
+): Promise<{ ok: true } | { error: string }> {
+  try {
+    const user = await getCurrentAppUser()
+    if (!user) return { error: '로그인이 필요합니다.' }
+    const supabase = createServerSupabase()
+
+    // contracts 업데이트 & phase/room_no 획득
+    const { data: contract, error: cErr } = await supabase
+      .from('contracts')
+      .update({ accommodation_type: stayType, updater: user.id })
+      .eq('id', contractId)
+      .select('phase, room_no')
+      .single()
+    if (cErr || !contract) return { error: cErr?.message ?? '계약을 찾을 수 없습니다.' }
+
+    // maintenance_requests 동기화 (같은 phase+room_no 전체)
+    await supabase
+      .from('maintenance_requests')
+      .update({ stay_type: stayType, updater: user.id })
+      .eq('phase', contract.phase)
+      .eq('room_no', contract.room_no)
+
+    revalidatePath('/contracts')
+    revalidatePath('/room-status')
+    revalidatePath('/room-master')
+    revalidatePath('/summary/operation')
+    revalidatePath('/maintenance/inbox')
+    revalidatePath('/maintenance')
+    return { ok: true }
+  } catch (e) {
+    return { error: (e as Error).message }
+  }
+}
+
 export async function deleteContractAction(form: FormData): Promise<void> {
   const user = await getCurrentAppUser()
   if (!user) return

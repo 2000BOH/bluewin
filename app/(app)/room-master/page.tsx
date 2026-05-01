@@ -2,7 +2,7 @@
 // 관리자만 등록/수정/삭제 가능. 일반직원은 조회만.
 
 import { createServerSupabase } from '@/lib/supabase/server'
-import { listRooms, type RoomFilter } from '@/lib/queries/rooms'
+import { listRoomsWithContracts, type RoomFilter } from '@/lib/queries/rooms'
 import PageHeader from '@/components/common/PageHeader'
 import RoomTable from './RoomTable'
 
@@ -30,7 +30,7 @@ export default async function RoomMasterPage({
   searchParams: SearchParams
 }) {
   const supabase = createServerSupabase()
-  const rows = await listRooms(supabase, buildFilter(searchParams))
+  const rows = await listRoomsWithContracts(supabase, buildFilter(searchParams))
 
   return (
     <div className="space-y-6 p-6 lg:p-8">

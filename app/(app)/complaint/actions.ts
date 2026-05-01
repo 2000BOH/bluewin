@@ -7,6 +7,7 @@ import { getCurrentAppUser } from '@/lib/auth/current-user'
 import { todayKst } from '@/lib/utils/format'
 import { loadRnrRules } from '@/lib/queries/rnr'
 import { assignRnrByStayType } from '@/lib/utils/rnr'
+import { ensureCleaningTaskFromSource, ensureCheckFromSource } from '@/lib/queries/maintenance-link'
 import type { StayType } from '@/types/status'
 import type { CommonStatus, MaintenanceSourceEnum, RnrStaffNoEnum } from '@/types/supabase'
 
@@ -26,10 +27,12 @@ const req = (v: FormDataEntryValue | null, name: string): string => {
 const parsePhase = (v: FormDataEntryValue | null): number => {
   const n = Number(v); if (!Number.isFinite(n) || n <= 0) throw new Error('차수 오류'); return n
 }
+const VALID_STATUSES: CommonStatus[] = ['접수', '입주지원', '영선', '외부업체', '퇴실', '청소', '완료']
 const mapStatus = (v: string | null): CommonStatus => {
+  if (v && (VALID_STATUSES as string[]).includes(v)) return v as CommonStatus
+  // 구버전 호환
   if (v === '영선이관') return '영선'
-  if (v === '외부업체') return '외부업체'
-  if (v === '완료') return '완료'
+  if (v === '처리중') return '접수'
   return '접수'
 }
 const toNum = (v: string | null) => v !== null ? (Number(v.replace(/,/g, '')) || null) : null
@@ -148,7 +151,7 @@ export async function createComplaintAction(
       const rules = await loadRnrRules(supabase)
       rnr_no = assignRnrByStayType(stay_type, rules) as RnrStaffNoEnum | null
 
-      const { error } = await supabase.from('maintenance_requests').insert({
+      const { data: newRow, error } = await supabase.from('maintenance_requests').insert({
         phase, room_no, title: `[${titleRaw}]`, content, requester,
         request_date: todayKst(), urgency: '일반',
         status: status satisfies CommonStatus,
@@ -156,8 +159,27 @@ export async function createComplaintAction(
         source_id: null, contract_id: contractId, stay_type, rnr_no,
         assigned_to: null, action_content, completed_at: null, completed_by: null,
         creator: user.id, updater: user.id,
-      })
+      }).select('id').single()
       if (error) return { error: error.message }
+
+      // 청소 → 객실정비 자동 등록
+      if (status === '청소' && newRow) {
+        await ensureCleaningTaskFromSource(supabase, {
+          phase, room_no, source: 'complaint', source_id: newRow.id,
+          requester, summary: `[${titleRaw}]`, detail: content ?? undefined,
+          contract_id: contractId, creator: user.id,
+        })
+        revalidatePath('/room-maintenance')
+      }
+      // 퇴실 → 객실체크 자동 등록
+      if (status === '퇴실' && newRow) {
+        await ensureCheckFromSource(supabase, {
+          phase, room_no, source: 'complaint', source_id: newRow.id,
+          requester, summary: `[${titleRaw}]`, detail: content ?? undefined,
+          contract_id: contractId, creator: user.id,
+        })
+        revalidatePath('/room-check')
+      }
     }
 
     if (!titleRaw && !savedContract) return { error: '분류를 선택하거나 객실정보를 수정해 주세요.' }

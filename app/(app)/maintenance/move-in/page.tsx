@@ -1,10 +1,12 @@
-// 객실정비 (/room-maintenance)
-// maintenance_requests 에서 처리상태='청소' 인 레코드를 표시한다.
+// 입주지원 (/maintenance/move-in)
+// status=입주지원 인 maintenance_requests 레코드를 관리한다.
+// 신규 등록 시 rnr_no='01'(유태형 과장) 자동 배정.
+// listMoveIn 사용 — DB enum에 '입주지원'이 없어도 JS 필터로 동작.
 
 import { createServerSupabase } from '@/lib/supabase/server'
-import { listMaintenance } from '@/lib/queries/maintenance'
+import { listMoveIn } from '@/lib/queries/maintenance'
 import PageHeader from '@/components/common/PageHeader'
-import TaskTable from './TaskTable'
+import MoveInTable from './MoveInTable'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,7 +14,7 @@ type SearchParams = Record<string, string | string[] | undefined>
 const pickStr = (v: string | string[] | undefined): string =>
   Array.isArray(v) ? (v[0] ?? '') : (v ?? '')
 
-export default async function RoomMaintenancePage({
+export default async function MoveInPage({
   searchParams,
 }: {
   searchParams: SearchParams
@@ -23,12 +25,11 @@ export default async function RoomMaintenancePage({
   const statusValue =
     statusParam ? statusParam :
     done === 'done' ? '완료' :
-    '청소'
+    '입주지원'
 
   const supabase = createServerSupabase()
-  const rows = await listMaintenance(supabase, {
-    status:    statusValue as import('@/types/supabase').CommonStatus,
-    statusNot: null,
+  const rows = await listMoveIn(supabase, {
+    statusValue,
     requester: pickStr(searchParams.requester) || null,
     from:      pickStr(searchParams.from) || null,
     to:        pickStr(searchParams.to)   || null,
@@ -37,10 +38,10 @@ export default async function RoomMaintenancePage({
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <PageHeader
-        title="객실정비"
-        description="처리상태가 청소인 요청을 관리합니다. 처리상태 변경 시 해당 페이지로 자동 이동됩니다."
+        title="입주지원"
+        description="입주지원 요청을 관리합니다. 담당자: 유태형 과장 (01). 신규 등록 시 자동 배정됩니다."
       />
-      <TaskTable rows={rows} />
+      <MoveInTable rows={rows} />
     </div>
   )
 }

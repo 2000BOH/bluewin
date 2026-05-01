@@ -10,8 +10,8 @@ import {
   type TransferInsert,
   type TransferUpdate,
 } from '@/lib/queries/room-transfer'
-import { ensureMaintenanceFromSource } from '@/lib/queries/maintenance-link'
-import { isMaintenanceTriggerStatus } from '@/lib/utils/status'
+import { ensureMaintenanceFromSource, ensureCleaningTaskFromSource, ensureCheckFromSource } from '@/lib/queries/maintenance-link'
+import { isMaintenanceTriggerStatus, isCleaningTriggerStatus, isCheckOutTriggerStatus } from '@/lib/utils/status'
 import type { CommonStatus } from '@/types/supabase'
 import { todayKst } from '@/lib/utils/format'
 
@@ -53,26 +53,35 @@ const buildPayload = (form: FormData) => {
   }
 }
 
-const linkMaintenanceIfNeeded = async (
+const linkIfNeeded = async (
   recordId: string,
   data: ReturnType<typeof buildPayload>,
   creator: string,
 ): Promise<{ maintenance_id: string } | undefined> => {
-  if (!isMaintenanceTriggerStatus(data.status)) return undefined
   const supabase = createServerSupabase()
   const summary = `${data.from_phase}차 ${data.from_room_no} → ${data.to_phase}차 ${data.to_room_no}`
   const detail = data.reason ?? summary
-  const { id } = await ensureMaintenanceFromSource(supabase, {
+  const linkInput = {
     phase: data.to_phase,
     room_no: data.to_room_no,
-    source: 'room-transfer',
+    source: 'room-transfer' as const,
     source_id: recordId,
     requester: data.tenant_name ?? '시스템',
     summary,
     detail,
     creator,
-  })
-  return { maintenance_id: id }
+  }
+  if (isMaintenanceTriggerStatus(data.status)) {
+    const { id } = await ensureMaintenanceFromSource(supabase, linkInput)
+    return { maintenance_id: id }
+  }
+  if (isCleaningTriggerStatus(data.status)) {
+    await ensureCleaningTaskFromSource(supabase, linkInput)
+  }
+  if (isCheckOutTriggerStatus(data.status)) {
+    await ensureCheckFromSource(supabase, linkInput)
+  }
+  return undefined
 }
 
 export async function createTransferAction(
@@ -86,9 +95,11 @@ export async function createTransferAction(
     const data = buildPayload(form)
     const payload: TransferInsert = { ...data, creator: user.id, updater: user.id }
     const row = await createTransfer(supabase, payload)
-    const link = await linkMaintenanceIfNeeded(row.id, data, user.id)
+    const link = await linkIfNeeded(row.id, data, user.id)
     revalidatePath('/room-transfer')
-    if (link) revalidatePath('/maintenance')
+    revalidatePath('/maintenance')
+    revalidatePath('/room-maintenance')
+    revalidatePath('/room-check')
     return { ok: true, maintenanceCreated: link }
   } catch (e) {
     return { error: (e as Error).message }
@@ -107,9 +118,11 @@ export async function updateTransferAction(
     const data = buildPayload(form)
     const payload: TransferUpdate = { ...data, updater: user.id }
     await updateTransfer(supabase, id, payload)
-    const link = await linkMaintenanceIfNeeded(id, data, user.id)
+    const link = await linkIfNeeded(id, data, user.id)
     revalidatePath('/room-transfer')
-    if (link) revalidatePath('/maintenance')
+    revalidatePath('/maintenance')
+    revalidatePath('/room-maintenance')
+    revalidatePath('/room-check')
     return { ok: true, maintenanceCreated: link }
   } catch (e) {
     return { error: (e as Error).message }
@@ -125,7 +138,7 @@ export async function deleteTransferAction(form: FormData): Promise<void> {
 }
 
 // 목록에서 상태 배지를 클릭해 인라인으로 상태만 변경.
-// '영선' 으로 전환 시 영선 페이지 자동 등록(ensureMaintenanceFromSource).
+// 영선→영선, 청소→객실정비, 퇴실→객실체크 자동 등록.
 export async function updateTransferStatusAction(
   id: string,
   status: CommonStatus,
@@ -139,7 +152,7 @@ export async function updateTransferStatusAction(
     const payload: TransferUpdate = { status, updater: user.id }
     await updateTransfer(supabase, id, payload)
 
-    if (isMaintenanceTriggerStatus(status)) {
+    if (isMaintenanceTriggerStatus(status) || isCleaningTriggerStatus(status) || isCheckOutTriggerStatus(status)) {
       const { data: row, error: fetchErr } = await supabase
         .from('room_transfers')
         .select('from_phase, from_room_no, to_phase, to_room_no, tenant_name, reason')
@@ -147,17 +160,26 @@ export async function updateTransferStatusAction(
         .single()
       if (!fetchErr && row) {
         const summary = `${row.from_phase}차 ${row.from_room_no} → ${row.to_phase}차 ${row.to_room_no}`
-        await ensureMaintenanceFromSource(supabase, {
+        const linkInput = {
           phase: row.to_phase,
           room_no: row.to_room_no,
-          source: 'room-transfer',
+          source: 'room-transfer' as const,
           source_id: id,
           requester: row.tenant_name ?? '시스템',
           summary,
           detail: row.reason ?? summary,
           creator: user.id,
-        })
-        revalidatePath('/maintenance')
+        }
+        if (isMaintenanceTriggerStatus(status)) {
+          await ensureMaintenanceFromSource(supabase, linkInput)
+          revalidatePath('/maintenance')
+        } else if (isCleaningTriggerStatus(status)) {
+          await ensureCleaningTaskFromSource(supabase, linkInput)
+          revalidatePath('/room-maintenance')
+        } else {
+          await ensureCheckFromSource(supabase, linkInput)
+          revalidatePath('/room-check')
+        }
       }
     }
     revalidatePath('/room-transfer')

@@ -14,6 +14,7 @@ export type TransferFilter = {
   roomNo?: string | null
   status?: CommonStatus | null
   statusNot?: CommonStatus | null
+  statusNotIn?: CommonStatus[]
   tenantName?: string | null
   from?: string | null
   to?: string | null
@@ -33,6 +34,9 @@ export const listTransfers = async (
   if (filter.toPhase != null) query = query.eq('to_phase', filter.toPhase)
   if (filter.status)    query = query.eq('status', filter.status)
   if (filter.statusNot) query = query.neq('status', filter.statusNot)
+  if (filter.statusNotIn?.length) {
+    query = query.not('status', 'in', `(${filter.statusNotIn.join(',')})`)
+  }
   if (filter.tenantName) query = query.ilike('tenant_name', `%${filter.tenantName}%`)
   if (filter.roomNo) {
     query = query.or(`from_room_no.ilike.%${filter.roomNo}%,to_room_no.ilike.%${filter.roomNo}%`)

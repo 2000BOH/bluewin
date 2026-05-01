@@ -1,76 +1,52 @@
 'use server'
 
+// 객실정비 서버 액션 — maintenance_requests 를 처리상태='청소' 로 관리.
+
 import { revalidatePath } from 'next/cache'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { getCurrentAppUser } from '@/lib/auth/current-user'
 import {
-  createTask,
-  updateTask,
-  deleteTask,
-  type TaskInsert,
-  type TaskUpdate,
-} from '@/lib/queries/room-maintenance-task'
-import { ensureMaintenanceFromSource } from '@/lib/queries/maintenance-link'
-import { isMaintenanceTriggerStatus } from '@/lib/utils/status'
-import { parseNumber, todayKst } from '@/lib/utils/format'
-import type { CommonStatus, MaintenanceTypeEnum } from '@/types/supabase'
+  createMaintenance,
+  updateMaintenance,
+  deleteMaintenance,
+  type MaintenanceInsert,
+  type MaintenanceUpdate,
+} from '@/lib/queries/maintenance'
+import type { CommonStatus } from '@/types/supabase'
+import { todayKst } from '@/lib/utils/format'
 
-export type TaskFormState = {
-  error?: string
-  ok?: boolean
-  maintenanceCreated?: { maintenance_id: string }
+export type TaskFormState = { error?: string; ok?: boolean }
+
+const parsePhase = (v: FormDataEntryValue | null): number => {
+  const n = Number(v)
+  if (!Number.isFinite(n) || n <= 0) throw new Error('차수는 1 이상의 숫자여야 합니다.')
+  return n
 }
-
 const required = (v: FormDataEntryValue | null, name: string): string => {
   const s = String(v ?? '').trim()
   if (!s) throw new Error(`${name} 필수입니다.`)
   return s
 }
 const optional = (v: FormDataEntryValue | null): string | null => {
-  const s = String(v ?? '').trim()
-  return s ? s : null
-}
-const numReq = (v: FormDataEntryValue | null, name: string): number => {
-  const n = Number(v)
-  if (!Number.isFinite(n) || n <= 0) throw new Error(`${name} 1 이상의 숫자여야 합니다.`)
-  return n
+  const s = String(v ?? '').trim(); return s || null
 }
 
-const buildPayload = (form: FormData) => {
-  const status = required(form.get('status'), '상태') as CommonStatus
-  return {
-    phase: numReq(form.get('phase'), '차수'),
-    room_no: required(form.get('room_no'), '호수'),
-    maintenance_type: required(form.get('maintenance_type'), '정비유형') as MaintenanceTypeEnum,
-    content: optional(form.get('content')),
-    requester: optional(form.get('requester')),
-    request_date: optional(form.get('request_date')) ?? todayKst(),
-    assigned_to: optional(form.get('assigned_to')),
-    status,
-    cost: parseNumber(String(form.get('cost') ?? '')),
-  }
-}
+const buildPayload = (form: FormData) => ({
+  phase:          parsePhase(form.get('phase')),
+  room_no:        required(form.get('room_no'), '호수'),
+  title:          required(form.get('title'), '제목'),
+  status:         (required(form.get('status'), '처리상태') as CommonStatus),
+  urgency:        ((form.get('urgency') as import('@/types/supabase').UrgencyLevel) || '일반'),
+  content:        optional(form.get('content')),
+  requester:      optional(form.get('requester')),
+  request_date:   optional(form.get('request_date')) ?? todayKst(),
+  assigned_to:    optional(form.get('assigned_to')),
+  action_content: optional(form.get('action_content')),
+})
 
-const linkMaintenanceIfNeeded = async (
-  recordId: string,
-  data: ReturnType<typeof buildPayload>,
-  creator: string,
-) => {
-  if (!isMaintenanceTriggerStatus(data.status)) return undefined
-  const supabase = createServerSupabase()
-  const summary = `${data.phase}차 ${data.room_no} ${data.maintenance_type}`
-  const detail = data.content ?? summary
-  const { id } = await ensureMaintenanceFromSource(supabase, {
-    phase: data.phase,
-    room_no: data.room_no,
-    source: 'room-maintenance',
-    source_id: recordId,
-    requester: data.requester ?? '시스템',
-    summary,
-    detail,
-    creator,
-  })
-  return { maintenance_id: id }
+const revalidate = () => {
+  revalidatePath('/room-maintenance')
+  revalidatePath('/maintenance/inbox')
 }
 
 export async function createTaskAction(
@@ -81,20 +57,23 @@ export async function createTaskAction(
     const user = await getCurrentAppUser()
     if (!user) return { error: '로그인이 필요합니다.' }
     const supabase = createServerSupabase()
-    const data = buildPayload(form)
-    const payload: TaskInsert = {
-      ...data,
+    const base = buildPayload(form)
+    const payload: MaintenanceInsert = {
+      ...base,
+      status: base.status || '청소',
+      source: '직접입력',
+      source_id: null,
       contract_id: null,
-      completed_at: data.status === '완료' ? new Date().toISOString() : null,
-      completed_by: data.status === '완료' ? user.id : null,
+      stay_type: null,
+      rnr_no: null,
+      completed_at: base.status === '완료' ? new Date().toISOString() : null,
+      completed_by: base.status === '완료' ? user.id : null,
       creator: user.id,
       updater: user.id,
     }
-    const row = await createTask(supabase, payload)
-    const link = await linkMaintenanceIfNeeded(row.id, data, user.id)
-    revalidatePath('/room-maintenance')
-    if (link) revalidatePath('/maintenance')
-    return { ok: true, maintenanceCreated: link }
+    await createMaintenance(supabase, payload)
+    revalidate()
+    return { ok: true }
   } catch (e) {
     return { error: (e as Error).message }
   }
@@ -109,18 +88,16 @@ export async function updateTaskAction(
     if (!user) return { error: '로그인이 필요합니다.' }
     const id = required(form.get('id'), 'id')
     const supabase = createServerSupabase()
-    const data = buildPayload(form)
-    const payload: TaskUpdate = {
-      ...data,
+    const base = buildPayload(form)
+    const payload: MaintenanceUpdate = {
+      ...base,
       updater: user.id,
-      completed_at: data.status === '완료' ? new Date().toISOString() : null,
-      completed_by: data.status === '완료' ? user.id : null,
+      completed_at: base.status === '완료' ? new Date().toISOString() : null,
+      completed_by: base.status === '완료' ? user.id : null,
     }
-    await updateTask(supabase, id, payload)
-    const link = await linkMaintenanceIfNeeded(id, data, user.id)
-    revalidatePath('/room-maintenance')
-    if (link) revalidatePath('/maintenance')
-    return { ok: true, maintenanceCreated: link }
+    await updateMaintenance(supabase, id, payload)
+    revalidate()
+    return { ok: true }
   } catch (e) {
     return { error: (e as Error).message }
   }
@@ -130,12 +107,10 @@ export async function deleteTaskAction(form: FormData): Promise<void> {
   const id = String(form.get('id') ?? '').trim()
   if (!id) return
   const supabase = createServerSupabase()
-  await deleteTask(supabase, id)
-  revalidatePath('/room-maintenance')
+  await deleteMaintenance(supabase, id)
+  revalidate()
 }
 
-// 목록에서 상태 배지를 클릭해 인라인으로 상태만 변경.
-// '영선' 으로 전환 시 영선 페이지 자동 등록.
 export async function updateTaskStatusAction(
   id: string,
   status: CommonStatus,
@@ -145,39 +120,19 @@ export async function updateTaskStatusAction(
     if (!user) return { error: '로그인이 필요합니다.' }
     if (!id) return { error: 'id 누락' }
     const supabase = createServerSupabase()
-
-    const payload: TaskUpdate = {
+    await updateMaintenance(supabase, id, {
       status,
       updater: user.id,
       completed_at: status === '완료' ? new Date().toISOString() : null,
       completed_by: status === '완료' ? user.id : null,
-    }
-    await updateTask(supabase, id, payload)
-
-    if (isMaintenanceTriggerStatus(status)) {
-      const { data: row, error: fetchErr } = await supabase
-        .from('room_maintenance_tasks')
-        .select('phase, room_no, requester, maintenance_type, content')
-        .eq('id', id)
-        .single()
-      if (!fetchErr && row) {
-        const summary = `${row.phase}차 ${row.room_no} ${row.maintenance_type}`
-        await ensureMaintenanceFromSource(supabase, {
-          phase: row.phase,
-          room_no: row.room_no,
-          source: 'room-maintenance',
-          source_id: id,
-          requester: row.requester ?? '시스템',
-          summary,
-          detail: row.content ?? summary,
-          creator: user.id,
-        })
-        revalidatePath('/maintenance')
-      }
-    }
+    })
     revalidatePath('/room-maintenance')
+    revalidatePath('/maintenance/inbox')
+    revalidatePath('/maintenance')
+    revalidatePath('/room-check')
     return { ok: true }
   } catch (e) {
     return { error: (e as Error).message }
   }
 }
+

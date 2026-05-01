@@ -18,6 +18,7 @@ type ContractLite = Pick<
 
 export type RoomStatusRow = RoomLite & {
   is_sold: boolean
+  contract_id: string | null
   buyer_name: string | null
   operation_type: string | null
   accommodation_type: string | null
@@ -50,6 +51,7 @@ export const getRoomStatus = async (supabase: Sb): Promise<RoomStatusRow[]> => {
     return {
       ...r,
       is_sold: !!c,
+      contract_id: c?.id ?? null,
       buyer_name: c ? buyerMap.get(c.buyer_id) ?? null : null,
       operation_type: c?.operation_type ?? null,
       accommodation_type: c?.accommodation_type ?? null,

@@ -12,6 +12,8 @@ import {
   type MaintenanceInsert,
   type MaintenanceUpdate,
 } from '@/lib/queries/maintenance'
+import { ensureCleaningTaskFromSource, ensureCheckFromSource } from '@/lib/queries/maintenance-link'
+import { isCleaningTriggerStatus, isCheckOutTriggerStatus } from '@/lib/utils/status'
 import type { CommonStatus, UrgencyLevel } from '@/types/supabase'
 import { todayKst } from '@/lib/utils/format'
 
@@ -137,7 +139,7 @@ export async function deleteMaintenanceAction(form: FormData): Promise<void> {
 }
 
 // 목록에서 상태 배지를 클릭해 인라인으로 상태만 변경.
-// maintenance_requests 자체 레코드이므로 자동 연동(영선 페이지 등록) 은 불필요.
+// '청소'→객실정비, '퇴실'→객실체크 자동 등록.
 export async function updateMaintenanceStatusAction(
   id: string,
   status: CommonStatus,
@@ -154,6 +156,35 @@ export async function updateMaintenanceStatusAction(
       completed_by: status === '완료' ? user.id : null,
     }
     await updateMaintenance(supabase, id, payload)
+
+    if (isCleaningTriggerStatus(status) || isCheckOutTriggerStatus(status)) {
+      const { data: row, error: fetchErr } = await supabase
+        .from('maintenance_requests')
+        .select('phase, room_no, requester, title, content, contract_id')
+        .eq('id', id)
+        .single()
+      if (!fetchErr && row) {
+        const linkInput = {
+          phase: row.phase,
+          room_no: row.room_no,
+          source: 'complaint' as const,
+          source_id: id,
+          requester: row.requester ?? '시스템',
+          summary: row.title ?? `${row.phase}차 ${row.room_no}`,
+          detail: row.content ?? undefined,
+          contract_id: row.contract_id,
+          creator: user.id,
+        }
+        if (isCleaningTriggerStatus(status)) {
+          await ensureCleaningTaskFromSource(supabase, linkInput)
+          revalidatePath('/room-maintenance')
+        } else {
+          await ensureCheckFromSource(supabase, linkInput)
+          revalidatePath('/room-check')
+        }
+      }
+    }
+
     revalidatePath('/maintenance')
     revalidatePath('/maintenance/inbox')
     return { ok: true }

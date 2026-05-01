@@ -22,6 +22,8 @@ export type TaskFilter = {
   roomNo?: string | null
   status?: CommonStatus | null
   statusNot?: CommonStatus | null
+  // 여러 상태를 동시에 제외할 때 사용 (이동된 레코드 숨김 등)
+  statusNotIn?: CommonStatus[]
   type?: MaintenanceTypeEnum | null
   requester?: string | null
   from?: string | null
@@ -39,6 +41,9 @@ export const listTasks = async (supabase: Sb, filter: TaskFilter = {}): Promise<
   if (filter.roomNo) query = query.ilike('room_no', `%${filter.roomNo}%`)
   if (filter.status)    query = query.eq('status', filter.status)
   if (filter.statusNot) query = query.neq('status', filter.statusNot)
+  if (filter.statusNotIn?.length) {
+    query = query.not('status', 'in', `(${filter.statusNotIn.join(',')})`)
+  }
   if (filter.type) query = query.eq('maintenance_type', filter.type)
   if (filter.requester) query = query.ilike('requester', `%${filter.requester}%`)
   if (filter.from) query = query.gte('request_date', filter.from)

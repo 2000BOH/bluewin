@@ -1,16 +1,16 @@
 'use client'
 
-// 객실체크 목록 테이블 — maintenance_requests (처리상태=퇴실) 기반.
+// 입주지원 목록 테이블.
 
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import RoomFilterBar from '@/components/common/RoomFilterBar'
-import InlineStatusSelect from '@/components/common/InlineStatusSelect'
+import StatusBadge from '@/components/common/StatusBadge'
 import Modal from '@/components/common/Modal'
 import EmptyState from '@/components/common/EmptyState'
-import CheckForm from './CheckForm'
-import { deleteCheckAction, updateCheckStatusAction } from './actions'
+import MoveInForm from './MoveInForm'
+import { deleteMoveInAction } from './actions'
 import { formatDate, formatDateTime } from '@/lib/utils/format'
 import type { MaintenanceRow } from '@/lib/queries/maintenance'
 import { Pencil, Plus, Trash2 } from 'lucide-react'
@@ -23,7 +23,7 @@ const URGENCY_DOT: Record<string, string> = {
 
 type Props = { rows: MaintenanceRow[] }
 
-export default function CheckTable({ rows }: Props) {
+export default function MoveInTable({ rows }: Props) {
   const router = useRouter()
   const params = useSearchParams()
   const [, startTransition] = useTransition()
@@ -39,21 +39,22 @@ export default function CheckTable({ rows }: Props) {
 
   const applyFilter = () => {
     const sp = new URLSearchParams()
-    if (done)      sp.set('done',      done)
+    if (done)      sp.set('done', done)
     if (requester) sp.set('requester', requester)
-    if (status)    sp.set('status',    status)
-    if (from)      sp.set('from',      from)
-    if (to)        sp.set('to',        to)
-    startTransition(() => router.push(`/room-check?${sp.toString()}`))
+    if (status)    sp.set('status', status)
+    if (from)      sp.set('from', from)
+    if (to)        sp.set('to', to)
+    startTransition(() => router.push(`/maintenance/move-in?${sp.toString()}`))
   }
   const resetFilter = () => {
     setDone(''); setRequester(''); setStatus(''); setFrom(''); setTo('')
-    startTransition(() => router.push('/room-check'))
+    startTransition(() => router.push('/maintenance/move-in'))
   }
   const handleDelete = (id: string) => {
-    if (!confirm('이 기록을 삭제하시겠습니까?')) return
-    const fd = new FormData(); fd.set('id', id)
-    startTransition(async () => { await deleteCheckAction(fd); router.refresh() })
+    if (!confirm('이 입주지원 기록을 삭제하시겠습니까?')) return
+    const fd = new FormData()
+    fd.set('id', id)
+    startTransition(async () => { await deleteMoveInAction(fd); router.refresh() })
   }
 
   const total     = rows.length
@@ -82,10 +83,12 @@ export default function CheckTable({ rows }: Props) {
         </Button>
       </div>
 
-      {/* 모바일 카드 */}
+      {/* 모바일: 카드형 */}
       <div className="sm:hidden space-y-2">
         {rows.length === 0 ? (
-          <div className="rounded-xl border bg-card p-6"><EmptyState description="퇴실 기록이 없습니다." /></div>
+          <div className="rounded-xl border bg-card p-6">
+            <EmptyState description="입주지원 기록이 없습니다." />
+          </div>
         ) : rows.map((r, idx) => (
           <div key={r.id} className="rounded-xl border border-border/60 bg-card p-3 shadow-sm">
             <div className="flex items-start justify-between gap-2">
@@ -100,14 +103,13 @@ export default function CheckTable({ rows }: Props) {
                 </div>
                 <div className="mt-1 text-sm font-medium line-clamp-2">{r.title}</div>
               </div>
-              <InlineStatusSelect status={r.status} size="sm"
-                onChange={(next) => updateCheckStatusAction(r.id, next)} />
+              <StatusBadge status={r.status} size="sm" />
             </div>
             <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
               <div><span className="text-muted-foreground">요청자</span><div>{r.requester ?? '-'}</div></div>
               <div><span className="text-muted-foreground">담당자</span><div>{r.assigned_to ?? '-'}</div></div>
               <div><span className="text-muted-foreground">요청일</span><div className="font-mono">{formatDate(r.request_date)}</div></div>
-              <div><span className="text-muted-foreground">완료일시</span><div className="font-mono">{formatDateTime(r.completed_at)}</div></div>
+              <div><span className="text-muted-foreground">완료일</span><div className="font-mono">{formatDateTime(r.completed_at)}</div></div>
             </div>
             <div className="mt-2 flex justify-end gap-1">
               <button type="button" onClick={() => setEditTarget(r)}
@@ -123,16 +125,22 @@ export default function CheckTable({ rows }: Props) {
         ))}
       </div>
 
-      {/* 데스크톱 테이블 */}
+      {/* 데스크톱: 테이블 */}
       <div className="hidden data-table-wrap sm:block">
         <table className="w-full text-sm">
           <thead className="bg-muted/30">
             <tr>
-              {['No','차수','호수','제목','요청자','긴급도','처리상태','담당자','요청일','완료일시','액션'].map((h) => (
-                <th key={h} className="px-3 py-2.5 text-left text-[11px] font-semibold tracking-wide text-muted-foreground">
-                  {h}
-                </th>
-              ))}
+              <th className="px-3 py-2.5 text-left text-[11px] font-semibold tracking-wide text-muted-foreground">No</th>
+              <th className="px-3 py-2.5 text-left text-[11px] font-semibold tracking-wide text-muted-foreground">차수</th>
+              <th className="px-3 py-2.5 text-left text-[11px] font-semibold tracking-wide text-muted-foreground">호수</th>
+              <th className="px-3 py-2.5 text-left text-[11px] font-semibold tracking-wide text-muted-foreground">제목</th>
+              <th className="px-3 py-2.5 text-left text-[11px] font-semibold tracking-wide text-muted-foreground">요청자</th>
+              <th className="px-3 py-2.5 text-left text-[11px] font-semibold tracking-wide text-muted-foreground">긴급도</th>
+              <th className="px-3 py-2.5 text-left text-[11px] font-semibold tracking-wide text-muted-foreground">상태</th>
+              <th className="px-3 py-2.5 text-left text-[11px] font-semibold tracking-wide text-muted-foreground">담당자</th>
+              <th className="px-3 py-2.5 text-left text-[11px] font-semibold tracking-wide text-muted-foreground">요청일</th>
+              <th className="px-3 py-2.5 text-left text-[11px] font-semibold tracking-wide text-muted-foreground">완료일시</th>
+              <th className="px-3 py-2.5 text-right text-[11px] font-semibold tracking-wide text-muted-foreground">액션</th>
             </tr>
           </thead>
           <tbody>
@@ -149,10 +157,7 @@ export default function CheckTable({ rows }: Props) {
                     {r.urgency}
                   </span>
                 </td>
-                <td className="px-3 py-2">
-                  <InlineStatusSelect status={r.status}
-                    onChange={(next) => updateCheckStatusAction(r.id, next)} />
-                </td>
+                <td className="px-3 py-2"><StatusBadge status={r.status} /></td>
                 <td className="px-3 py-2">{r.assigned_to ?? '-'}</td>
                 <td className="px-3 py-2 text-xs">{formatDate(r.request_date)}</td>
                 <td className="px-3 py-2 text-xs">{formatDateTime(r.completed_at)}</td>
@@ -172,15 +177,17 @@ export default function CheckTable({ rows }: Props) {
             ))}
           </tbody>
         </table>
-        {rows.length === 0 && <div className="p-6"><EmptyState description="퇴실 기록이 없습니다." /></div>}
+        {rows.length === 0 && (
+          <div className="p-6"><EmptyState description="입주지원 기록이 없습니다." /></div>
+        )}
       </div>
 
-      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="객실체크 등록" size="lg">
-        <CheckForm mode="create" onSuccess={() => { setCreateOpen(false); router.refresh() }} />
+      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="입주지원 등록" size="lg">
+        <MoveInForm mode="create" onSuccess={() => { setCreateOpen(false); router.refresh() }} />
       </Modal>
-      <Modal open={!!editTarget} onClose={() => setEditTarget(null)} title="객실체크 수정" size="lg">
+      <Modal open={!!editTarget} onClose={() => setEditTarget(null)} title="입주지원 수정" size="lg">
         {editTarget && (
-          <CheckForm mode="edit" initial={editTarget}
+          <MoveInForm mode="edit" initial={editTarget}
             onSuccess={() => { setEditTarget(null); router.refresh() }} />
         )}
       </Modal>

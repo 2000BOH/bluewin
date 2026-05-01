@@ -19,6 +19,12 @@ export const STATUS_STYLE: Record<
     label: '접수',
     description: '요청 접수됨 (R&R 자동 배분 대상)',
   },
+  입주지원: {
+    className:
+      'bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-950/40 dark:text-teal-300 dark:border-teal-900',
+    label: '입주지원',
+    description: '입주 지원 처리 (입주지원 페이지 자동 등록, 담당: 유태형 과장)',
+  },
   영선: {
     className:
       'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-900',
@@ -54,9 +60,10 @@ export const STATUS_STYLE: Record<
 // 상태별 자동 연동 대상 페이지.
 // 외부업체/완료는 자동 연동 없음(팝업·기록만).
 export const STATUS_AUTO_TARGET: Partial<
-  Record<CommonStatus, '/maintenance/inbox' | '/maintenance' | '/room-check' | '/room-maintenance'>
+  Record<CommonStatus, '/maintenance/inbox' | '/maintenance/move-in' | '/maintenance' | '/room-check' | '/room-maintenance'>
 > = {
   접수: '/maintenance/inbox',
+  입주지원: '/maintenance/move-in',
   영선: '/maintenance',
   퇴실: '/room-check',
   청소: '/room-maintenance',

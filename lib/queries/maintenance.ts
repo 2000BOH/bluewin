@@ -43,8 +43,9 @@ export const listMaintenance = async (
 
   if (filter.phase != null) query = query.eq('phase', filter.phase)
   if (filter.roomNo) query = query.ilike('room_no', `%${filter.roomNo}%`)
-  if (filter.status) query = query.eq('status', filter.status)
-  if (filter.statusNot) query = query.neq('status', filter.statusNot)
+  // status::text 캐스팅 — DB enum에 아직 없는 신규 값(입주지원 등)도 안전하게 필터링
+  if (filter.status) query = query.filter('status::text', 'eq', filter.status)
+  if (filter.statusNot) query = query.filter('status::text', 'neq', filter.statusNot)
   if (filter.urgency) query = query.eq('urgency', filter.urgency)
   if (filter.assignedTo) query = query.ilike('assigned_to', `%${filter.assignedTo}%`)
   if (filter.requester)  query = query.ilike('requester',   `%${filter.requester}%`)
@@ -104,4 +105,44 @@ export const updateMaintenance = async (
 export const deleteMaintenance = async (supabase: Sb, id: string): Promise<void> => {
   const { error } = await supabase.from('maintenance_requests').delete().eq('id', id)
   if (error) throw new Error(error.message)
+}
+
+// DB enum에 '입주지원'이 아직 없는 경우: JS 측에서 필터링.
+// '완료'는 기존 enum에 있으므로 DB 필터 사용, '입주지원'만 JS 필터.
+export const listMoveIn = async (
+  supabase: Sb,
+  filter: { statusValue?: string; requester?: string | null; from?: string | null; to?: string | null } = {},
+): Promise<MaintenanceRow[]> => {
+  const wantStatus = filter.statusValue ?? '입주지원'
+
+  // '완료'는 기존 enum 값이므로 DB 레벨에서 필터 가능
+  if (wantStatus === '완료') {
+    let q = supabase
+      .from('maintenance_requests')
+      .select('*')
+      .eq('status', '완료')
+      .order('created_at', { ascending: false })
+      .limit(500)
+    if (filter.requester) q = q.ilike('requester', `%${filter.requester}%`)
+    if (filter.from) q = q.gte('request_date', filter.from)
+    if (filter.to) q = q.lte('request_date', filter.to)
+    const { data, error } = await q
+    if (error) throw new Error(error.message)
+    return (data ?? []) as MaintenanceRow[]
+  }
+
+  // '입주지원' 등 미등록 enum 값: 전체 조회 후 JS 필터
+  let q = supabase
+    .from('maintenance_requests')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(1000)
+  if (filter.requester) q = q.ilike('requester', `%${filter.requester}%`)
+  if (filter.from) q = q.gte('request_date', filter.from)
+  if (filter.to) q = q.lte('request_date', filter.to)
+  const { data, error } = await q
+  if (error) throw new Error(error.message)
+  return ((data ?? []) as MaintenanceRow[]).filter(
+    (r) => (r.status as string) === wantStatus,
+  )
 }

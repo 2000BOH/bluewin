@@ -28,6 +28,8 @@ export type CheckFilter = {
   roomNo?: string | null
   status?: CommonStatus | null
   statusNot?: CommonStatus | null
+  // 여러 상태를 동시에 제외할 때 사용 (이동된 레코드 숨김 등)
+  statusNotIn?: CommonStatus[]
   overall?: OverallCheckStatus | null
   checker?: string | null
   from?: string | null
@@ -48,6 +50,10 @@ export const listChecks = async (
   if (filter.roomNo) query = query.ilike('room_no', `%${filter.roomNo}%`)
   if (filter.status)    query = query.eq('status', filter.status)
   if (filter.statusNot) query = query.neq('status', filter.statusNot)
+  if (filter.statusNotIn?.length) {
+    // Supabase not.in 필터로 여러 상태 동시 제외
+    query = query.not('status', 'in', `(${filter.statusNotIn.join(',')})`)
+  }
   if (filter.overall)   query = query.eq('overall_status', filter.overall)
   if (filter.checker)   query = query.ilike('checker', `%${filter.checker}%`)
   if (filter.from) query = query.gte('check_date', filter.from)

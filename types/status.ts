@@ -8,6 +8,7 @@
 
 export const COMMON_STATUSES = [
   '접수',
+  '담당배정',
   '입주지원',
   '영선',
   '외부업체',

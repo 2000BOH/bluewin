@@ -60,7 +60,7 @@ const STATUS_COLOR: Record<string, string> = {
   퇴실: 'bg-gray-100 text-gray-600',
   청소: 'bg-sky-100 text-sky-700',
   완료: 'bg-green-100 text-green-700',
-  처리중: 'bg-yellow-100 text-yellow-700',
+  담당배정: 'bg-yellow-100 text-yellow-700',
 }
 
 const URGENCY_DOT: Record<string, string> = {

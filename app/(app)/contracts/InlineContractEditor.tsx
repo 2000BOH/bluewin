@@ -11,6 +11,8 @@ import { Field, TextInput, TextArea, Select } from '@/components/common/FormFiel
 import { inlineUpdateContractAction, type ContractFormState } from './actions'
 import type { ContractListItem } from '@/lib/queries/contracts'
 import { STAY_TYPES, OPERATION_TYPES } from '@/types/status'
+import { useRoomInput } from '@/hooks/useRoomInput'
+import AutoRoomSummary from '@/components/common/AutoRoomSummary'
 
 const INITIAL: ContractFormState = {}
 
@@ -37,6 +39,19 @@ type Props = {
 export default function InlineContractEditor({ row, buyers, onClose, onSaved }: Props) {
   const [state, formAction] = useFormState(inlineUpdateContractAction, INITIAL)
 
+  const {
+    phase,
+    roomNo,
+    roomNoRef,
+    handlePhaseChange,
+    handleRoomNoChange,
+    handleRoomCompositionStart,
+    handleRoomCompositionEnd,
+  } = useRoomInput({
+    initialPhase: String(row.phase ?? ''),
+    initialRoomNo: row.room_no ?? '',
+  })
+
   useEffect(() => {
     if (state.ok) onSaved()
   }, [state, onSaved])
@@ -50,11 +65,25 @@ export default function InlineContractEditor({ row, buyers, onClose, onSaved }: 
         <h3 className="mb-2 text-xs font-semibold text-muted-foreground">① 계약기본</h3>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
           <Field label="차수" required>
-            <TextInput name="phase" type="number" min={1} required defaultValue={row.phase ?? ''} />
+            <TextInput name="phase" type="number" min={1} required value={phase} onChange={handlePhaseChange} />
           </Field>
-          <Field label="호수" required>
-            <TextInput name="room_no" required defaultValue={row.room_no ?? ''} />
-          </Field>
+          <div className="flex flex-col gap-1.5">
+            <Field label="호수" required>
+              <TextInput
+                ref={roomNoRef}
+                name="room_no"
+                required
+                value={roomNo}
+                onChange={handleRoomNoChange}
+                onCompositionStart={handleRoomCompositionStart}
+                onCompositionEnd={handleRoomCompositionEnd}
+              />
+            </Field>
+          </div>
+          
+          <div className="col-span-2 sm:col-span-4 lg:col-span-6 -mt-1 mb-1">
+            <AutoRoomSummary phase={phase} roomNo={roomNo} />
+          </div>
           <Field label="계약번호">
             <TextInput name="contract_no" defaultValue={row.contract_no ?? ''} />
           </Field>

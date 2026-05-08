@@ -27,12 +27,12 @@ const req = (v: FormDataEntryValue | null, name: string): string => {
 const parsePhase = (v: FormDataEntryValue | null): number => {
   const n = Number(v); if (!Number.isFinite(n) || n <= 0) throw new Error('차수 오류'); return n
 }
-const VALID_STATUSES: CommonStatus[] = ['접수', '입주지원', '영선', '외부업체', '퇴실', '청소', '완료']
+const VALID_STATUSES: CommonStatus[] = ['접수', '담당배정', '입주지원', '영선', '외부업체', '퇴실', '청소', '완료']
 const mapStatus = (v: string | null): CommonStatus => {
   if (v && (VALID_STATUSES as string[]).includes(v)) return v as CommonStatus
   // 구버전 호환
   if (v === '영선이관') return '영선'
-  if (v === '처리중') return '접수'
+  if (v === '처리중') return '담당배정'
   return '접수'
 }
 const toNum = (v: string | null) => v !== null ? (Number(v.replace(/,/g, '')) || null) : null

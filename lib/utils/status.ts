@@ -19,6 +19,12 @@ export const STATUS_STYLE: Record<
     label: '접수',
     description: '요청 접수됨 (R&R 자동 배분 대상)',
   },
+  담당배정: {
+    className:
+      'bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-900',
+    label: '담당배정',
+    description: '담당자 배정 완료 — 처리 대기',
+  },
   입주지원: {
     className:
       'bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-950/40 dark:text-teal-300 dark:border-teal-900',

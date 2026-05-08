@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useFormState, useFormStatus } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -12,6 +12,7 @@ import {
 } from './actions'
 import { COMMON_STATUSES } from '@/types/status'
 import type { TransferRow } from '@/lib/queries/room-transfer'
+import RoomContractsPanel from '@/components/features/room/RoomContractsPanel'
 
 const INITIAL: TransferFormState = {}
 
@@ -34,6 +35,16 @@ export default function TransferForm({ mode, initial, onSuccess }: Props) {
   const router = useRouter()
   const action = mode === 'create' ? createTransferAction : updateTransferAction
   const [state, formAction] = useFormState(action, INITIAL)
+
+  // 계약서 패널 표시용 — 4개 입력을 controlled 로 추적.
+  const [fromPhase, setFromPhase] = useState(
+    initial?.from_phase != null ? String(initial.from_phase) : '',
+  )
+  const [fromRoomNo, setFromRoomNo] = useState(initial?.from_room_no ?? '')
+  const [toPhase, setToPhase] = useState(
+    initial?.to_phase != null ? String(initial.to_phase) : '',
+  )
+  const [toRoomNo, setToRoomNo] = useState(initial?.to_room_no ?? '')
 
   useEffect(() => {
     if (!state.ok) return
@@ -58,11 +69,17 @@ export default function TransferForm({ mode, initial, onSuccess }: Props) {
           type="number"
           min={1}
           required
-          defaultValue={initial?.from_phase ?? ''}
+          value={fromPhase}
+          onChange={(e) => setFromPhase(e.target.value)}
         />
       </Field>
       <Field label="이동 전 호수" required>
-        <TextInput name="from_room_no" required defaultValue={initial?.from_room_no ?? ''} />
+        <TextInput
+          name="from_room_no"
+          required
+          value={fromRoomNo}
+          onChange={(e) => setFromRoomNo(e.target.value)}
+        />
       </Field>
       <Field label="이동 후 차수" required>
         <TextInput
@@ -70,11 +87,17 @@ export default function TransferForm({ mode, initial, onSuccess }: Props) {
           type="number"
           min={1}
           required
-          defaultValue={initial?.to_phase ?? ''}
+          value={toPhase}
+          onChange={(e) => setToPhase(e.target.value)}
         />
       </Field>
       <Field label="이동 후 호수" required>
-        <TextInput name="to_room_no" required defaultValue={initial?.to_room_no ?? ''} />
+        <TextInput
+          name="to_room_no"
+          required
+          value={toRoomNo}
+          onChange={(e) => setToRoomNo(e.target.value)}
+        />
       </Field>
 
       <Field label="임차인명">
@@ -107,6 +130,19 @@ export default function TransferForm({ mode, initial, onSuccess }: Props) {
       <Field label="비고" className="sm:col-span-2">
         <TextArea name="note" defaultValue={initial?.note ?? ''} />
       </Field>
+
+      <div className="sm:col-span-2 grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <RoomContractsPanel
+          phase={fromPhase}
+          roomNo={fromRoomNo}
+          label="이동 전 객실 — 숙박계약서"
+        />
+        <RoomContractsPanel
+          phase={toPhase}
+          roomNo={toRoomNo}
+          label="이동 후 객실 — 숙박계약서"
+        />
+      </div>
 
       {state.error && (
         <p className="sm:col-span-2 text-sm text-destructive" role="alert">

@@ -10,7 +10,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export type CommonStatus = '접수' | '입주지원' | '영선' | '외부업체' | '퇴실' | '청소' | '완료'
+export type CommonStatus = '접수' | '담당배정' | '입주지원' | '영선' | '외부업체' | '퇴실' | '청소' | '완료'
 export type UrgencyLevel = '긴급' | '일반' | '낮음'
 export type UserRole = 'admin' | 'staff' | 'viewer'
 export type BuyerType = '개인' | '법인'
@@ -329,6 +329,31 @@ export type Database = {
         Insert: Omit<Database['public']['Tables']['change_history']['Row'], 'id' | 'changed_at'> &
           Partial<Pick<Database['public']['Tables']['change_history']['Row'], 'id' | 'changed_at'>>
         Update: never
+        Relationships: []
+      }
+
+      room_contract_files: {
+        Row: {
+          id: string
+          phase: number
+          room_no: string
+          file_url: string
+          file_path: string
+          file_name: string
+          file_size: number | null
+          contract_date: string | null
+          guest_name: string | null
+          note: string | null
+          uploaded_by: string | null
+          uploaded_at: string
+        }
+        Insert: Omit<
+          Database['public']['Tables']['room_contract_files']['Row'],
+          'id' | 'uploaded_at'
+        > & Partial<
+          Pick<Database['public']['Tables']['room_contract_files']['Row'], 'id' | 'uploaded_at'>
+        >
+        Update: Partial<Database['public']['Tables']['room_contract_files']['Insert']>
         Relationships: []
       }
     }

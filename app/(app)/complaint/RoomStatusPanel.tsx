@@ -3,6 +3,7 @@
 // 민원접수 사이드패널. 차수+호수 입력 시 해당 객실의 현재 상태와 변경 이력을 표시한다.
 
 import { useEffect, useState } from 'react'
+import RoomContractsPanel from '@/components/features/room/RoomContractsPanel'
 
 type ActiveItem = {
   id: string
@@ -185,6 +186,9 @@ export default function RoomStatusPanel({
 
   return (
     <div className="flex flex-col gap-4">
+      {/* ── 숙박계약서 (읽기전용) ── */}
+      <RoomContractsPanel phase={phase} roomNo={roomNo} readonly compact />
+
       {/* ── 현재 객실 상태 ── */}
       <PanelShell
         title="현재 객실 상태"

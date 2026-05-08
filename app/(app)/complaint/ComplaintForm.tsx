@@ -11,6 +11,7 @@ import { useFormState, useFormStatus } from 'react-dom'
 import { Field, Select, TextArea, TextInput } from '@/components/common/FormField'
 import { STAY_TYPES } from '@/types/status'
 import { createComplaintAction, type ComplaintFormState } from './actions'
+import RoomContractsPanel from '@/components/features/room/RoomContractsPanel'
 
 const COMPLAINT_CATEGORIES = [
   '🔐 도어락', '🚿 배관·누수·수도', '❄️ 냉난방·에어컨', '🏠 시설하자·보수',
@@ -523,6 +524,12 @@ export default function ComplaintForm({ onRoomChange }: Props) {
                   rows={2} placeholder="계약 관련 메모" />
               </Field>
             </div>
+          </div>
+
+          {/* 섹션 6: 숙박계약서 (PDF) */}
+          <div>
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">숙박계약서</p>
+            <RoomContractsPanel phase={phase} roomNo={roomNo} />
           </div>
 
         </div>
